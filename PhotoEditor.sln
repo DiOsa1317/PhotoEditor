@@ -1,5 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi", "src\WebApi\WebApi.csproj", "{5D891783-C15D-41B8-ACFE-4065681D1DD3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Worker", "src\Worker\Worker.csproj", "{BDA4FCFC-5BC5-4735-8B88-E0EC153A76E1}"
@@ -7,6 +8,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "tests\UnitTests\UnitTests.csproj", "{538124B9-D551-40AA-8865-F7F0E8EA46AF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntegrationTests", "tests\IntegrationTests\IntegrationTests.csproj", "{2951FD41-AB66-48FD-8F2E-EAB8637A0569}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0EBA63F6-48C3-46F2-8709-D61F55A52D07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalR", "src\SignalR\SignalR.csproj", "{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +35,12 @@ Global
 		{2951FD41-AB66-48FD-8F2E-EAB8637A0569}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2951FD41-AB66-48FD-8F2E-EAB8637A0569}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2951FD41-AB66-48FD-8F2E-EAB8637A0569}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54} = {0EBA63F6-48C3-46F2-8709-D61F55A52D07}
 	EndGlobalSection
 EndGlobal
