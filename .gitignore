@@ -1,0 +1,49 @@
+﻿## 1. Сборка .NET (бинарники и временные файлы компилятора)
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+TestResults/
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.sln.docstates
+
+## 2. Секреты и локальные переменные окружения (критично для безопасности!)
+.env
+*.env
+!.env.example
+appsettings*.local.json
+appsettings.Production.json
+appsettings.secrets.json
+
+## 3. Настройки IDE (JetBrains Rider, Visual Studio, VS Code)
+# Rider
+.idea/
+*.sln.iml
+
+# Visual Studio
+.vs/
+*.dotCover
+
+# Visual Studio Code
+.vscode/
+
+## 4. Пакеты NuGet
+*.nupkg
+packages/
+!**/packages/build/
+
+## 5. Файлы операционных систем
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+
+## 6. Локальные данные и дампы
+*.log
+*.sqlite
+*.db
+crashdump/
