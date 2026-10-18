@@ -21,12 +21,12 @@ public class UsersController : Controller
     [Produces("application/json", "application/xml")]
     public ActionResult<UserDto> GetUserById([FromQuery] string userId)
     {
-        var userDto = UserStorage.GetUserById(userId);
-        if (userDto == null)
+        var user = UserStorage.GetUserById(userId);
+        if (user == null)
             return NotFound();
+
+        var userDto = new UserDto(user.Login, user.Id);
         return Ok(userDto);
     }
-
-
 }
 

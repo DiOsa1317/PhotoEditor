@@ -5,10 +5,10 @@ namespace WebApi.Models;
 public class UserDto
 {
     public string Login {get; }
-    public int Id {get; }
+    public string Id {get; }
 
-    public UserDto(string login, int id){
-        Login = login;
-        Id = id;
+    public UserDto(string Login, string Id){
+        this.Login = Login;
+        this.Id = Id;
     }
 }
