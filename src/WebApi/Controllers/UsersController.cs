@@ -1,6 +1,8 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Models;
+using Infrastructure.Repository.Ram;
+using Infrastructure.Interfaces;
 
 namespace WebApi.Controllers;
 
@@ -8,14 +10,23 @@ namespace WebApi.Controllers;
 [ApiController]
 public class UsersController : Controller
 {
+    public IUserRepository UserStorage{get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
+
+    public UsersController(IUserRepository Storage)
+    {
+        this.UserStorage = Storage;
+    }
+
     [HttpGet()]
     [Produces("application/json", "application/xml")]
-    public ActionResult<UserDto> GetUserById([FromQuery] int userId)
+    public ActionResult<UserDto> GetUserById([FromQuery] string userId)
     {
-        var userDto = new UserDto("Alex", userId);
+        var userDto = UserStorage.GetUserById(userId);
         if (userDto == null)
             return NotFound();
         return Ok(userDto);
     }
+
+
 }
 
