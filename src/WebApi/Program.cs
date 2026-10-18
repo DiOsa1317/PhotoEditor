@@ -1,6 +1,10 @@
+using System;
+using System.Linq;
+using WebApi.Controllers;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -17,9 +21,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseRouting();
+
 
 app.UseAuthorization();
 
 app.MapControllers();
+// app.MapControllerRoute(
+//     name : "default",
+//     pattern : "{}"
+// );
 
 app.Run();
