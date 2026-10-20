@@ -28,5 +28,14 @@ public class UsersController : Controller
         var userDto = new UserDto(user.Login, user.Id);
         return Ok(userDto);
     }
+
+    // [HttpPost()]
+    // [Produces("application/json", "application/xml")]
+    // public ActionResult RegisterUser([FromBody] CreateUserDto? user)
+    // {
+    //     if (user == null)
+    //         return BadRequest();
+        
+    // }
 }
 

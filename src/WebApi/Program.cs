@@ -14,8 +14,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var repo = new RamUserRepository(new Dictionary<string, User>());
-builder.Services.AddSingleton<IUserRepository>(repo);
+var dict = new Dictionary<string, User>(){ // для примера
+    {"id", new User("login", "id")}
+};
+
+var ram = new RamUserRepository(dict);
+builder.Services.AddSingleton<IUserRepository>(ram);
 
 var app = builder.Build();
 
