@@ -1,6 +1,6 @@
 using System;
 
-namespace WebApi.Domain;
+namespace Shared.Domain;
 
 public class User
 {

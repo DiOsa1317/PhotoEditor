@@ -1,8 +1,8 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Models;
-using Infrastructure.Repository.Ram;
-using Infrastructure.Interfaces;
+using Shared.Infrastructure.Repository.Ram;
+using Shared.Infrastructure.Interfaces;
 
 namespace WebApi.Controllers;
 

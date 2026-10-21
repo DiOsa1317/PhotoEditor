@@ -1,7 +1,7 @@
 using System;
-using WebApi.Domain;
+using Shared.Domain;
 
-namespace Infrastructure.Interfaces;
+namespace Shared.Infrastructure.Interfaces;
 
 public interface IUserRepository
 {

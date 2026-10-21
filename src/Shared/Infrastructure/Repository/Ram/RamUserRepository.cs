@@ -1,9 +1,9 @@
 using System;
-using Infrastructure.Interfaces;
+using Shared.Infrastructure.Interfaces;
 using System.Collections.Generic;
-using WebApi.Domain;
+using Shared.Domain;
 
-namespace Infrastructure.Repository.Ram;
+namespace Shared.Infrastructure.Repository.Ram;
 
 public class RamUserRepository : IUserRepository
 {
