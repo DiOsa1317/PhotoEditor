@@ -12,28 +12,30 @@ namespace WebApi.Controllers;
 public class UsersController : Controller
 {
     public IUserRepository UserStorage{get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
+    public ISessionRepository SessionStorage { get; }
 
-    public UsersController(IUserRepository Storage)
+    public UsersController(IUserRepository Storage, ISessionRepository SessionStorage)
     {
         this.UserStorage = Storage;
+        this.SessionStorage = SessionStorage;
     }
 
     [HttpGet()]
     [Produces("application/json", "application/xml")]
     public ActionResult<UserDto> GetUserById([FromQuery] string userId)
     {
-        // прокидываю в слой бизнес логики в будущем
+        // прокидываю в слой бизнес логики в будущем и там валидирую
         var user = UserStorage.GetUserById(userId);
         if (user == null)
             return NotFound();
-
+        
         var userDto = new UserDto(user.Login, user.Id);
         return Ok(userDto);
     }
 
-    [HttpPost()]
+    [HttpPost("/register")]
     [Produces("application/json", "application/xml")]
-    public ActionResult PostUser([FromBody] UserDto userDto)
+    public ActionResult RegisterUser([FromBody] UserDto userDto)
     {
         if (UserStorage.GetUserById(userDto.Id) != null)
         {
@@ -47,7 +49,20 @@ public class UsersController : Controller
         
         if (!UserStorage.PostUser(user))
             return BadRequest();
-        return Ok();
+        return Created();
+    }
+
+    [HttpPost("/login")]
+    [Produces("application/json", "application/xml")]
+    public ActionResult<string> LoginUser([FromBody] UserDto userDto)
+    {
+        if (UserStorage.GetUserById(userDto.Id) == null)
+            return BadRequest();
+        var sessionId = "12345"; //в бизнесе генерится новая сессия а пока заглушка
+        var user = new User(userDto.Login, userDto.Id); // опять же автомаппер + в бизнесе это все
+        if (!SessionStorage.PostSession(sessionId, user))
+            return BadRequest();
+        return Created();
     }
 }
 

@@ -15,6 +15,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
+builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
 
 var app = builder.Build();
 

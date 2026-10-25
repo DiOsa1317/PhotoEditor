@@ -23,7 +23,7 @@ public class RamUserRepository : IUserRepository
 
     public bool PostUser(User user)
     {
-        if (Storage.ContainsKey(user.Id))
+        if (GetUserById(user.Id) != null)
             return false;
         Storage[user.Id] = user;
         return true;
