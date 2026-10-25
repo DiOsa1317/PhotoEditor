@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using WebApi.Models;
 using Infrastructure.Repository.Ram;
+using WebApi.Domain;
 using Infrastructure.Interfaces;
 
 namespace WebApi.Controllers;
@@ -21,6 +22,7 @@ public class UsersController : Controller
     [Produces("application/json", "application/xml")]
     public ActionResult<UserDto> GetUserById([FromQuery] string userId)
     {
+        // прокидываю в слой бизнес логики в будущем
         var user = UserStorage.GetUserById(userId);
         if (user == null)
             return NotFound();
@@ -29,13 +31,23 @@ public class UsersController : Controller
         return Ok(userDto);
     }
 
-    // [HttpPost()]
-    // [Produces("application/json", "application/xml")]
-    // public ActionResult RegisterUser([FromBody] CreateUserDto? user)
-    // {
-    //     if (user == null)
-    //         return BadRequest();
+    [HttpPost()]
+    [Produces("application/json", "application/xml")]
+    public ActionResult PostUser([FromBody] UserDto userDto)
+    {
+        if (UserStorage.GetUserById(userDto.Id) != null)
+        {
+            return BadRequest();
+        }
+
+        // прокидываю в слой бизнес логики в будущем
+        // и формирую там сущность, но пока что здесь
+
+        var user = new User(userDto.Login, userDto.Id); //надо сделать автомаппер
         
-    // }
+        if (!UserStorage.PostUser(user))
+            return BadRequest();
+        return Ok();
+    }
 }
 

@@ -9,9 +9,9 @@ public class RamUserRepository : IUserRepository
 {
     public Dictionary<string, User> Storage{get; }
 
-    public RamUserRepository(Dictionary<string, User> Storage)
+    public RamUserRepository()
     {
-        this.Storage = Storage;
+        this.Storage = new Dictionary<string, User>();
     }
 
     public User? GetUserById(string userId)
@@ -19,5 +19,13 @@ public class RamUserRepository : IUserRepository
         if (!Storage.ContainsKey(userId))
             return null;
         return Storage[userId];
+    }
+
+    public bool PostUser(User user)
+    {
+        if (Storage.ContainsKey(user.Id))
+            return false;
+        Storage[user.Id] = user;
+        return true;
     }
 }
