@@ -54,15 +54,16 @@ public class UsersController : Controller
 
     [HttpPost("/login")]
     [Produces("application/json", "application/xml")]
-    public ActionResult<string> LoginUser([FromBody] UserDto userDto)
+    public ActionResult<SessionDto> LoginUser([FromBody] UserDto userDto)
     {
         if (UserStorage.GetUserById(userDto.Id) == null)
             return BadRequest();
+        // а также проверка в бизнесе логина и пароля
         var sessionId = "12345"; //в бизнесе генерится новая сессия а пока заглушка
         var user = new User(userDto.Login, userDto.Id); // опять же автомаппер + в бизнесе это все
         if (!SessionStorage.PostSession(sessionId, user))
             return BadRequest();
-        return Created();
+        return Ok(new SessionDto(sessionId));
     }
 }
 
