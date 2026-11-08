@@ -1,6 +1,4 @@
-using System;
 using Shared.Infrastructure.Interfaces;
-using System.Collections.Generic;
 using Shared.Domain;
 
 namespace Shared.Infrastructure.Repository.Ram;
@@ -16,9 +14,12 @@ public class RamUserRepository : IUserRepository
 
     public User? GetUserById(string userId)
     {
-        if (!Storage.ContainsKey(userId))
-            return null;
-        return Storage[userId];
+        return Storage.GetValueOrDefault(userId);
+    }
+
+    public User? GetUserByLogin(string login)
+    {
+        return Storage.Values.FirstOrDefault(x => x.Login == login);
     }
 
     public bool PostUser(User user)

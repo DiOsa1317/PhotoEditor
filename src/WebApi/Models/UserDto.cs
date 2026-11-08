@@ -1,14 +1,12 @@
-using System;
-
 namespace WebApi.Models;
 
 public class UserDto
 {
     public string Login {get; }
-    public string Password {get; }
+    public string Id {get; }
 
-    public UserDto(string Login, string Password){
-        this.Login = Login;
-        this.Password = Password;
+    public UserDto(string login, string id){
+        Login = login;
+        Id = id;
     }
 }

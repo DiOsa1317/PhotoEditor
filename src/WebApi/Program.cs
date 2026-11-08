@@ -1,9 +1,5 @@
-using System;
-using System.Linq;
-using WebApi.Controllers;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Repository.Ram;
-using Shared.Domain;
 
 
 var builder = WebApplication.CreateBuilder(args);

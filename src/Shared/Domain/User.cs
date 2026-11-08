@@ -4,13 +4,15 @@ namespace Shared.Domain;
 
 public class User
 {
-    public string Login{get; }
+    public string Login {get; }
     public string PasswordHash { get; }
-    public string Id{get; }
+    public string Id { get; }
+    public DateTime CreatedAt { get; }
 
-    public User(string Login, string Id, string PasswordHash){
-        this.Login = Login;
-        this.Id = Id;
-        this.PasswordHash = PasswordHash;
+    public User(string login, string id, string passwordHash, DateTime? createdAt = null){
+        Login = login;
+        Id = id;
+        PasswordHash = passwordHash;
+        CreatedAt = createdAt ??  DateTime.UtcNow;
     }
 }

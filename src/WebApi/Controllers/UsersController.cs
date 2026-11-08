@@ -1,9 +1,7 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebApi.Models;
-using Infrastructure.Repository.Ram;
-using WebApi.Domain;
-using Infrastructure.Interfaces;
+using Shared.Domain;
+using Shared.Infrastructure.Interfaces;
 
 namespace WebApi.Controllers;
 
@@ -11,13 +9,21 @@ namespace WebApi.Controllers;
 [ApiController]
 public class UsersController : Controller
 {
-    public IUserRepository UserStorage{get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
+    public IUserRepository UserStorage{ get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
     public ISessionRepository SessionStorage { get; }
 
-    public UsersController(IUserRepository Storage, ISessionRepository SessionStorage)
+    public UsersController(IUserRepository userStorage, ISessionRepository sessionStorage)
     {
-        this.UserStorage = Storage;
-        this.SessionStorage = SessionStorage;
+        UserStorage = userStorage;
+        SessionStorage = sessionStorage;
+    }
+
+    [HttpGet]
+    public ActionResult<UserDto> GetUserBYId([FromQuery] string userId)
+    {
+        var user = UserStorage.GetUserById(userId);
+        if (user == null) return NotFound();
+        return Ok(new UserDto(user.Login, user.Id));
     }
 
     // [HttpGet()]
@@ -35,13 +41,13 @@ public class UsersController : Controller
 
     [HttpPost("/register")]
     [Produces("application/json", "application/xml")]
-    public ActionResult RegisterUser([FromBody] UserDto userDto)
+    public ActionResult RegisterUser([FromBody] CredentialsDto dto)
     {
 
         // прокидываю в слой бизнес логики в будущем
         // и формирую там сущность с хешем пароля, но пока что здесь
 
-        var user = new User(userDto.Login, "1234", "hash"); //надо сделать автомаппер 
+        var user = new User(dto.Login, Guid.NewGuid().ToString(), "hash", DateTime.UtcNow); //надо сделать автомаппер 
         
         // if (UserStorage.GetUserByLogin(user) != null)
         // {
@@ -55,13 +61,14 @@ public class UsersController : Controller
 
     [HttpPost("/login")]
     [Produces("application/json", "application/xml")]
-    public ActionResult<SessionDto> LoginUser([FromBody] UserDto userDto)
+    public ActionResult<SessionDto> LoginUser([FromBody] CredentialsDto dto)
     {
         // if (UserStorage.GetUserById(userDto.Id) == null) //надо поправить обработку
         //     return BadRequest();
         // а также проверка в бизнесе логина и пароля
-        var sessionId = "12345"; //в бизнесе генерится новая сессия а пока заглушка
-        var user = new User(userDto.Login, "1234", "passwordBase"); // опять же автомаппер + в бизнесе это все
+        var user = UserStorage.GetUserByLogin(dto.Login); // опять же автомаппер + в бизнесе это все
+        if (user == null) return BadRequest();
+        var sessionId = Guid.NewGuid().ToString(); //в бизнесе генерится новая сессия а пока заглушка
         if (!SessionStorage.PostSession(sessionId, user))
             return BadRequest();
         return Ok(new SessionDto(sessionId));
