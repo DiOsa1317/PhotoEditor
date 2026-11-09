@@ -1,4 +1,6 @@
+using MongoDB.Driver;
 using Shared.Infrastructure.Interfaces;
+using Shared.Infrastructure.Mongo;
 using Shared.Infrastructure.Repository.Ram;
 
 
@@ -10,6 +12,12 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var mongoClient = new MongoClient(builder.Configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017");
+var mongoDatabase = mongoClient.GetDatabase(builder.Configuration["Mongo:Database"] ?? "pixelqueue");
+
+builder.Services.AddSingleton<IMongoDatabase>(mongoDatabase);
+builder.Services.AddSingleton<ITaskRepository, MongoTaskRepository>();
+builder.Services.AddSingleton<IFileStorage, MongoFileStorage>();
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
 
