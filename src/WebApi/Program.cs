@@ -12,6 +12,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
+builder.Services.AddSingleton<IPhotoRepository, RamPhotoRepository>();
 
 var app = builder.Build();
 
