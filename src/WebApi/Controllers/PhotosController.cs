@@ -1,6 +1,6 @@
 namespace WebApi.Controllers;
 
-public class TasksController
+public class PhotosController
 {
     
 }
