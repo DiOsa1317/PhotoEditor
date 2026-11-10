@@ -1,5 +1,8 @@
 using MassTransit;
 using MongoDB.Driver;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Mongo;
 using Worker.Infrastructure.Consumers;
@@ -7,6 +10,9 @@ using Worker.Infrastructure.Interfaces;
 using Worker.Infrastructure.Magick;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new CompactJsonFormatter()));
 
 builder.Services.AddSingleton<IMongoDatabase>(_ =>
 {
@@ -32,7 +38,10 @@ builder.Services.AddMassTransit(x =>
 });
 
 var app = builder.Build();
+app.UseSerilogRequestLogging();
+app.UseHttpMetrics();
 
 app.MapGet("/", () => "PixelQueue worker");
+app.MapMetrics();
 
 app.Run();

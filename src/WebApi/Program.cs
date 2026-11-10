@@ -1,12 +1,18 @@
 using MassTransit;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Mongo;
 using Shared.Infrastructure.Repository.Ram;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new CompactJsonFormatter()));
 
 
 builder.Services.AddControllers();
@@ -37,6 +43,17 @@ builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
 
 var app = builder.Build();
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault()
+                        ?? Guid.NewGuid().ToString();
+    context.Response.Headers["X-Correlation-Id"] = correlationId;
+    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next();
+    }
+});
+app.UseSerilogRequestLogging();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -47,6 +64,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseHttpMetrics();
 
 
 app.UseAuthorization();
@@ -56,5 +74,6 @@ app.MapControllers();
 //     name : "default",
 //     pattern : "{}"
 // );
+app.MapMetrics();
 
 app.Run();
