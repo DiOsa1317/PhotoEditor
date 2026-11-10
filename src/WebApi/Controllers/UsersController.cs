@@ -15,7 +15,7 @@ public class UsersController : Controller
         SessionStorage = sessionStorage;
     }
 
-    public IUserRepository UserStorage { get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
+    public IUserRepository UserStorage { get; }
     public ISessionRepository SessionStorage { get; }
 
     [HttpGet]
@@ -46,7 +46,7 @@ public class UsersController : Controller
         // прокидываю в слой бизнес логики в будущем
         // и формирую там сущность с хешем пароля, но пока что здесь
 
-        var user = new User(dto.Login, Guid.NewGuid().ToString(), "hash", DateTime.UtcNow); //надо сделать автомаппер 
+        var user = new User(dto.Login, Guid.NewGuid().ToString(), "hash", DateTime.UtcNow);
 
         // if (UserStorage.GetUserByLogin(user) != null)
         // {
@@ -62,12 +62,9 @@ public class UsersController : Controller
     [Produces("application/json", "application/xml")]
     public ActionResult<SessionDto> LoginUser([FromBody] CredentialsDto dto)
     {
-        // if (UserStorage.GetUserById(userDto.Id) == null) //надо поправить обработку
-        //     return BadRequest();
-        // а также проверка в бизнесе логина и пароля
-        var user = UserStorage.GetUserByLogin(dto.Login); // опять же автомаппер + в бизнесе это все
+        var user = UserStorage.GetUserByLogin(dto.Login);
         if (user == null) return BadRequest();
-        var sessionId = Guid.NewGuid().ToString(); //в бизнесе генерится новая сессия а пока заглушка
+        var sessionId = Guid.NewGuid().ToString();
         if (!SessionStorage.PostSession(sessionId, user))
             return BadRequest();
         return Ok(new SessionDto(sessionId));
