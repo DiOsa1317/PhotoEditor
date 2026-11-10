@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebApi.Models;
 using Shared.Domain;
 using Shared.Infrastructure.Interfaces;
+using WebApi.Models;
 
 namespace WebApi.Controllers;
 
@@ -9,14 +9,14 @@ namespace WebApi.Controllers;
 [ApiController]
 public class UsersController : Controller
 {
-    public IUserRepository UserStorage{ get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
-    public ISessionRepository SessionStorage { get; }
-
     public UsersController(IUserRepository userStorage, ISessionRepository sessionStorage)
     {
         UserStorage = userStorage;
         SessionStorage = sessionStorage;
     }
+
+    public IUserRepository UserStorage { get; } //пока нет бизнес логики взаимодействую напрямую через слой Repository
+    public ISessionRepository SessionStorage { get; }
 
     [HttpGet]
     public ActionResult<UserDto> GetUserBYId([FromQuery] string userId)
@@ -43,17 +43,16 @@ public class UsersController : Controller
     [Produces("application/json", "application/xml")]
     public ActionResult RegisterUser([FromBody] CredentialsDto dto)
     {
-
         // прокидываю в слой бизнес логики в будущем
         // и формирую там сущность с хешем пароля, но пока что здесь
 
         var user = new User(dto.Login, Guid.NewGuid().ToString(), "hash", DateTime.UtcNow); //надо сделать автомаппер 
-        
+
         // if (UserStorage.GetUserByLogin(user) != null)
         // {
         //     return BadRequest();
         // }
-        
+
         if (!UserStorage.PostUser(user))
             return BadRequest();
         return Created();
@@ -74,4 +73,3 @@ public class UsersController : Controller
         return Ok(new SessionDto(sessionId));
     }
 }
-

@@ -1,7 +1,7 @@
 using ImageMagick;
-using Worker.Domain;
+using Shared.Domain;
 using Worker.Infrastructure.Interfaces;
-using FilterType = Worker.Domain.FilterType;
+using FilterType = Shared.Domain.FilterType;
 
 namespace Worker.Infrastructure.Magick;
 
@@ -32,12 +32,13 @@ public class MagickImageProcessor : IImageProcessor
     {
         switch (filterRequest.FilterType)
         {
-            case FilterType.Negative : image.Negate(); break;
-            case FilterType.Mirror : image.Flop(); break;
+            case FilterType.Negative: image.Negate(); break;
+            case FilterType.Mirror: image.Flop(); break;
             case FilterType.Blur:
                 image.Blur(0, filterRequest.BlurRadius > 0 ? filterRequest.BlurRadius : 5);
                 break;
-            case FilterType.Sharpen: image.Sharpen(0, 1);
+            case FilterType.Sharpen:
+                image.Sharpen(0, 1);
                 break;
             default:
                 throw new ImageProcessingException($"Неизвестный фильтр: {filterRequest.FilterType}");

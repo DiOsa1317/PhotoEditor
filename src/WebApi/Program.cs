@@ -1,3 +1,4 @@
+using MassTransit;
 using MongoDB.Driver;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Mongo;
@@ -18,6 +19,18 @@ var mongoDatabase = mongoClient.GetDatabase(builder.Configuration["Mongo:Databas
 builder.Services.AddSingleton<IMongoDatabase>(mongoDatabase);
 builder.Services.AddSingleton<ITaskRepository, MongoTaskRepository>();
 builder.Services.AddSingleton<IFileStorage, MongoFileStorage>();
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", host =>
+        {
+            host.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+            host.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+        });
+    });
+});
+
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
 
@@ -35,7 +48,7 @@ app.UseRouting();
 
 
 app.UseAuthorization();
-
+    
 app.MapControllers();
 // app.MapControllerRoute(
 //     name : "default",

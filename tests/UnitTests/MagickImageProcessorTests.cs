@@ -1,7 +1,7 @@
 using ImageMagick;
-using Worker.Domain;
+using Shared.Domain;
 using Worker.Infrastructure.Magick;
-using FilterType = Worker.Domain.FilterType;
+using FilterType = Shared.Domain.FilterType;
 
 namespace UnitTests;
 
@@ -16,7 +16,7 @@ public class MagickImageProcessorTests
     [TestCase(FilterType.Sharpen)]
     public async Task Process_KeepsImageSize(FilterType filterType)
     {
-        var result = await Process(StepImage(), new FilterRequest(filterType, BlurRadius: 2));
+        var result = await Process(StepImage(), new FilterRequest(filterType, 2));
         using var image = new MagickImage(result);
 
         Assert.Multiple(() =>
@@ -44,13 +44,13 @@ public class MagickImageProcessorTests
     [Test]
     public async Task Blur_SoftensStepEdge()
     {
-        var result = await Process(StepImage(), new FilterRequest(FilterType.Blur, BlurRadius: 2));
+        var result = await Process(StepImage(), new FilterRequest(FilterType.Blur, 2));
 
         Assert.Multiple(() =>
         {
             Assert.That(ChannelAt(result, 3, 0), Is.GreaterThan(0).And.LessThan(Max),
                 "Край черной половины должен посветлеть");
-            Assert.That(ChannelAt(result, 4, 0),  Is.GreaterThan(0).And.LessThan(Max),
+            Assert.That(ChannelAt(result, 4, 0), Is.GreaterThan(0).And.LessThan(Max),
                 "Край белой половины должен затемниться");
         });
     }
@@ -59,19 +59,26 @@ public class MagickImageProcessorTests
     public async Task Sharpen_ChangesInteriorOfCurvedGradient()
     {
         var source = RampMessage();
-        var result = await Process(source, new  FilterRequest(FilterType.Sharpen));
-        
+        var result = await Process(source, new FilterRequest(FilterType.Sharpen));
+
         Assert.That(ChannelAt(result, 4, 4), Is.Not.EqualTo(ChannelAt(source, 4, 4)),
             "На параболическом градиенте unsharp-маска обязана изменить центр");
     }
-    
-    private static Task<byte[]> Process(byte[] image, FilterRequest filterRequest) =>
-    new  MagickImageProcessor().ProcessAsync(image, filterRequest, CancellationToken.None);
 
-    private static byte[] StepImage() => CreateImage((x, _) => x < 4 ? (ushort)0 : Max);
+    private static Task<byte[]> Process(byte[] image, FilterRequest filterRequest)
+    {
+        return new MagickImageProcessor().ProcessAsync(image, filterRequest, CancellationToken.None);
+    }
 
-    private static byte[] RampMessage() =>
-        CreateImage((x, y) => (ushort)((x * x + y * y) * Max / 98));
+    private static byte[] StepImage()
+    {
+        return CreateImage((x, _) => x < 4 ? (ushort)0 : Max);
+    }
+
+    private static byte[] RampMessage()
+    {
+        return CreateImage((x, y) => (ushort)((x * x + y * y) * Max / 98));
+    }
 
     private static byte[] CreateImage(Func<int, int, ushort> channel)
     {
@@ -79,14 +86,13 @@ public class MagickImageProcessorTests
         using (var pixels = image.GetPixels())
         {
             for (var y = 0; y < ImageSize; y++)
+            for (var x = 0; x < ImageSize; x++)
             {
-                for (var x = 0; x < ImageSize; x++)
-                {
-                    var value = channel(x, y);
-                    pixels.SetPixel(x, y, [value, value, value]);
-                }
+                var value = channel(x, y);
+                pixels.SetPixel(x, y, [value, value, value]);
             }
         }
+
         image.Format = MagickFormat.Png;
         return image.ToByteArray();
     }

@@ -1,17 +1,17 @@
-﻿using Shared.Infrastructure.Interfaces;
-using Shared.Domain;
+﻿using Shared.Domain;
+using Shared.Infrastructure.Interfaces;
 
 namespace Shared.Infrastructure.Repository.Ram;
 
 public class RamSessionRepository : ISessionRepository
 {
-    public Dictionary<string, User> Storage { get; }
-
     public RamSessionRepository()
     {
         Storage = new Dictionary<string, User>();
     }
-    
+
+    public Dictionary<string, User> Storage { get; }
+
     public User? GetUserBySessionId(string sessionId)
     {
         return Storage.GetValueOrDefault(sessionId);

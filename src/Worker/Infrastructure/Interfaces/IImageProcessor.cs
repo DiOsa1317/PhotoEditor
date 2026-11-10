@@ -1,4 +1,4 @@
-using Worker.Domain;
+using Shared.Domain;
 
 namespace Worker.Infrastructure.Interfaces;
 

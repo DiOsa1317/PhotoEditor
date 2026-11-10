@@ -1,5 +1,6 @@
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
-
+using Shared.Contracts;
 using Shared.Domain;
 using Shared.Infrastructure.Interfaces;
 
@@ -11,6 +12,7 @@ public class TasksController : ControllerBase
 {
     private readonly ITaskRepository _taskRepository;
     private readonly IFileStorage _fileStorage;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     private const string NoFileText = "Файл не передан";
     private const string ShouldBeImageText = "Файл должен быть изображением";
@@ -22,10 +24,11 @@ public class TasksController : ControllerBase
     private const string ResultNotFound = "Результат ещё не готов";
     
 
-    public TasksController(ITaskRepository taskRepository, IFileStorage fileStorage)
+    public TasksController(ITaskRepository taskRepository, IFileStorage fileStorage, IPublishEndpoint publishEndpoint)
     {
         _taskRepository = taskRepository;
         _fileStorage = fileStorage;
+        _publishEndpoint = publishEndpoint;
     }
 
     [HttpPost]
@@ -62,6 +65,8 @@ public class TasksController : ControllerBase
             SourceFileId = sourceFileId
         };
         await _taskRepository.InsertAsync(task);
+        await _publishEndpoint.Publish(new TaskCreated(Guid.Parse(task.Id), Guid.Parse(task.UserId), task.Filter,
+            task.BlurRadius, task.SourceFileId));
 
         return Ok(new TaskResponse(task.Id, task.UserId, task.Status, task.SourceFileId));
     }
@@ -87,7 +92,7 @@ public class TasksController : ControllerBase
             return NotFound(new { error = TaskNotFoundText });
         if (task.Status != ImageTaskStatus.Completed)
             return Conflict(new { error = ResultNotFound });
-        await using var resultStream = await _fileStorage.GetAsync(task.ResultFileId);
+        var resultStream = await _fileStorage.GetAsync(task.ResultFileId);
         return File(resultStream, "image/png", $"{task.Id}.png");
     }
 
