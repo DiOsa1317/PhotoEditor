@@ -17,14 +17,17 @@ public class TaskCompletedConsumer : IConsumer<TaskCompleted>
 
     public async Task Consume(ConsumeContext<TaskCompleted> context)
     {
-        var message = context.Message;
-        await _hub.Clients.Group(message.UserId.ToString())
-            .SendAsync("TaskCompleted",
-                new { taskId = message.TaskId, resultFileId = message.ResultFileId },
-                context.CancellationToken);
+        using (CorrelationHelper.Push(context))
+        {
+            var message = context.Message;
+            await _hub.Clients.Group(message.UserId.ToString())
+                .SendAsync("TaskCompleted",
+                    new { taskId = message.TaskId, resultFileId = message.ResultFileId },
+                    context.CancellationToken);
 
-        _logger.LogInformation("Notification sent: task {TaskId} completed for user {UserId}",
-            message.TaskId, message.UserId);
+            _logger.LogInformation("Notification sent: task {TaskId} completed for user {UserId}",
+                message.TaskId, message.UserId);
+        }
     }
 }
 
@@ -41,13 +44,16 @@ public class TaskFailedConsumer : IConsumer<TaskFailed>
 
     public async Task Consume(ConsumeContext<TaskFailed> context)
     {
-        var message = context.Message;
-        await _hub.Clients.Group(message.UserId.ToString())
-            .SendAsync("TaskFailed",
-                new { taskId = message.TaskId, error = message.Error },
-                context.CancellationToken);
+        using (CorrelationHelper.Push(context))
+        {
+            var message = context.Message;
+            await _hub.Clients.Group(message.UserId.ToString())
+                .SendAsync("TaskFailed",
+                    new { taskId = message.TaskId, error = message.Error },
+                    context.CancellationToken);
 
-        _logger.LogInformation("Notification sent: task {TaskId} failed for user {UserId}",
-            message.TaskId, message.UserId);
+            _logger.LogInformation("Notification sent: task {TaskId} failed for user {UserId}",
+                message.TaskId, message.UserId);
+        }
     }
 }

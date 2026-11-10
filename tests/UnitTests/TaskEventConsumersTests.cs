@@ -76,6 +76,7 @@ public class TaskEventConsumersTests
         var context = new Mock<ConsumeContext<T>>();
         context.Setup(c => c.Message).Returns(message);
         context.Setup(c => c.CancellationToken).Returns(CancellationToken.None);
+        context.Setup(c => c.Headers).Returns(Mock.Of<Headers>());
         return context.Object;
     }
 }
