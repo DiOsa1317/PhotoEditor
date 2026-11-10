@@ -1,7 +1,14 @@
 using MassTransit;
 using Notifications;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new CompactJsonFormatter()));
 
 builder.Services.AddSignalR();
 
@@ -22,8 +29,13 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
+app.UseSerilogRequestLogging();
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.UseRouting();
+app.UseHttpMetrics();
+
 app.MapHub<NotificationsHub>("/hubs/notifications");
+app.MapMetrics();
 
 app.Run();

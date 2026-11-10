@@ -128,10 +128,14 @@
             body.append("blurRadius", document.getElementById("blur").value);
             body.append("userId", userId);
 
-            const response = await fetch(API + "/tasks", { method: "POST", body });
-            const data = await response.json();
-            if (!response.ok) { alert(data.error || "Ошибка при отправке"); return; }
-            addTaskRow(data.id, filterSelect.value);
+            try {
+                const response = await fetch(API + "/tasks", { method: "POST", body });
+                const data = await response.json();
+                if (!response.ok) { alert(data.error || "Ошибка при отправке"); return; }
+                addTaskRow(data.id, filterSelect.value);
+            } catch (err) {
+                alert("Не удалось связаться с WebApi (" + API + "). Он запущен?");
+            }
         };
     </script>
 </body>
