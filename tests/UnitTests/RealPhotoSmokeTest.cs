@@ -1,9 +1,10 @@
-using Worker.Domain;
+using Shared.Domain;
 using Worker.Infrastructure.Magick;
 
 namespace UnitTests;
 
-[TestFixture, Explicit("Ручная визуальная проверка на реальной фотке")]
+[TestFixture]
+[Explicit("Ручная визуальная проверка на реальной фотке")]
 public class RealPhotoSmokeTest
 {
     [Test]
@@ -16,10 +17,10 @@ public class RealPhotoSmokeTest
         foreach (var filter in Enum.GetValues<FilterType>())
         {
             var result = processor
-                .ProcessAsync(source, new FilterRequest(filter, BlurRadius: 5),
+                .ProcessAsync(source, new FilterRequest(filter, 5),
                     CancellationToken.None)
                 .Result;
-            var outPath  = Path.Combine(TestContext.CurrentContext.TestDirectory, $"{filter}.jpg");
+            var outPath = Path.Combine(TestContext.CurrentContext.TestDirectory, $"{filter}.jpg");
             File.WriteAllBytes(outPath, result);
             TestContext.Out.WriteLine($"{filter} -> {outPath}");
         }

@@ -1,8 +1,17 @@
+using MassTransit;
+using MongoDB.Driver;
+using Prometheus;
+using Serilog;
+using Serilog.Formatting.Compact;
 using Shared.Infrastructure.Interfaces;
+using Shared.Infrastructure.Mongo;
 using Shared.Infrastructure.Repository.Ram;
 
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Host.UseSerilog((ctx, cfg) => cfg
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new CompactJsonFormatter()));
 
 
 builder.Services.AddControllers();
@@ -10,11 +19,40 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var mongoClient = new MongoClient(builder.Configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017");
+var mongoDatabase = mongoClient.GetDatabase(builder.Configuration["Mongo:Database"] ?? "pixelqueue");
+
+builder.Services.AddSingleton<IMongoDatabase>(mongoDatabase);
+builder.Services.AddSingleton<ITaskRepository, MongoTaskRepository>();
+builder.Services.AddSingleton<IFileStorage, MongoFileStorage>();
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", host =>
+        {
+            host.Username(builder.Configuration["RabbitMq:Username"] ?? "guest");
+            host.Password(builder.Configuration["RabbitMq:Password"] ?? "guest");
+        });
+    });
+});
+
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
 builder.Services.AddSingleton<IPhotoRepository, RamPhotoRepository>();
 
 var app = builder.Build();
+app.Use(async (context, next) =>
+{
+    var correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault()
+                        ?? Guid.NewGuid().ToString();
+    context.Response.Headers["X-Correlation-Id"] = correlationId;
+    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+    {
+        await next();
+    }
+});
+app.UseSerilogRequestLogging();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -25,14 +63,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseHttpMetrics();
 
 
 app.UseAuthorization();
-
+    
 app.MapControllers();
 // app.MapControllerRoute(
 //     name : "default",
 //     pattern : "{}"
 // );
+app.MapMetrics();
 
 app.Run();

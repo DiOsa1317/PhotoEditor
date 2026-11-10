@@ -1,4 +1,4 @@
-namespace Worker.Domain;
+namespace Shared.Domain;
 
 public enum FilterType
 {

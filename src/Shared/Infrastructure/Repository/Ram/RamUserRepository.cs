@@ -1,16 +1,16 @@
-using Shared.Infrastructure.Interfaces;
 using Shared.Domain;
+using Shared.Infrastructure.Interfaces;
 
 namespace Shared.Infrastructure.Repository.Ram;
 
 public class RamUserRepository : IUserRepository
 {
-    public Dictionary<string, User> Storage{get; }
-
     public RamUserRepository()
     {
-        this.Storage = new Dictionary<string, User>();
+        Storage = new Dictionary<string, User>();
     }
+
+    public Dictionary<string, User> Storage { get; }
 
     public User? GetUserById(string userId)
     {
