@@ -1,2 +1,82 @@
 ﻿services:
-  
+  mongodb:
+    image: mongo:latest
+    container_name: pixelqueue-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand({ping:1})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: pixelqueue-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  webapi:
+    build:
+      context: .
+      dockerfile: src/WebApi/Dockerfile
+    container_name: pixelqueue-webapi
+    ports:
+      - "5000:80"
+    environment:
+      Mongo:ConnectionString: mongodb://mongodb:27017
+      Mongo:Database: pixelqueue
+      RabbitMq:Host: rabbitmq
+      RabbitMq:Username: guest
+      RabbitMq:Password: guest
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/Worker/Dockerfile
+    container_name: pixelqueue-worker
+    environment:
+      Mongo:ConnectionString: mongodb://mongodb:27017
+      Mongo:Database: pixelqueue
+      RabbitMq:Host: rabbitmq
+      RabbitMq:Username: guest
+      RabbitMq:Password: guest
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  signalr:
+    build:
+      context: .
+      dockerfile: src/SignalR/Dockerfile
+    container_name: pixelqueue-signalr
+    ports:
+      - "5001:80"
+    environment:
+      RabbitMq:Host: rabbitmq
+      RabbitMq:Username: guest
+      RabbitMq:Password: guest
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  mongodb_data:

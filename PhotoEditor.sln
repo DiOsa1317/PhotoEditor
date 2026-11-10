@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0EBA63F6-48C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SignalR", "src\SignalR\SignalR.csproj", "{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shared", "src\Shared\Shared.csproj", "{06296FA8-3E1A-4265-A3E9-9716D3810C86}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,8 +41,13 @@ Global
 		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06296FA8-3E1A-4265-A3E9-9716D3810C86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06296FA8-3E1A-4265-A3E9-9716D3810C86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06296FA8-3E1A-4265-A3E9-9716D3810C86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06296FA8-3E1A-4265-A3E9-9716D3810C86}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{92B65C2B-A092-4AEA-90A4-24A58D4F8E54} = {0EBA63F6-48C3-46F2-8709-D61F55A52D07}
+		{06296FA8-3E1A-4265-A3E9-9716D3810C86} = {0EBA63F6-48C3-46F2-8709-D61F55A52D07}
 	EndGlobalSection
 EndGlobal

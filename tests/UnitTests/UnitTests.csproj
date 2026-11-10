@@ -21,4 +21,12 @@
         <Using Include="NUnit.Framework"/>
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="sample.jpg" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\Worker\Worker.csproj"/>
+    </ItemGroup>
+
 </Project>
