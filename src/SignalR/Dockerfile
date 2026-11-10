@@ -1,9 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["SignalR/SignalR.csproj", "SignalR/"]
-RUN dotnet restore "SignalR/SignalR.csproj"
+COPY ["src/SignalR/SignalR.csproj", "src/SignalR/"]
+COPY ["src/Shared/Shared.csproj", "src/Shared/"]
+RUN dotnet restore "src/SignalR/SignalR.csproj"
 COPY . .
-WORKDIR "/src/SignalR"
+WORKDIR "/src/src/SignalR"
 RUN dotnet publish "SignalR.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
