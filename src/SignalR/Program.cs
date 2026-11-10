@@ -22,8 +22,8 @@ builder.Services.AddMassTransit(x =>
 
 var app = builder.Build();
 
-// app.UseDefaultFiles();
-// app.UseStaticFiles();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.MapHub<NotificationsHub>("/hubs/notifications");
 
 app.Run();

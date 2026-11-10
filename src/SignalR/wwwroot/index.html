@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PixelQueue</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+        h1 { margin-bottom: 0.2rem; }
+        .muted { color: #777; font-size: 0.85rem; }
+        form { display: grid; gap: 0.7rem; margin: 1.5rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+        label { display: grid; gap: 0.2rem; font-size: 0.9rem; }
+        [hidden] { display: none !important; }
+        button { padding: 0.6rem; border: 0; border-radius: 6px; background: #3b6cf6; color: #fff; font-size: 1rem; cursor: pointer; }
+        .task { padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 0.7rem; }
+        .status { font-weight: 600; }
+        .status.Completed { color: #1a8f3c; }
+        .status.Failed { color: #c62828; }
+        .task img { max-width: 100%; margin-top: 0.6rem; border-radius: 6px; }
+        #conn { font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <h1>PixelQueue</h1>
+    <div class="muted">Загрузите картинку, выберите фильтр. Результат появится сам, когда обработка закончится.</div>
+    <div id="conn" class="muted">Уведомления: подключаюсь…</div>
+
+    <form id="form">
+        <label>Изображение
+            <input type="file" id="file" accept="image/*" required>
+        </label>
+        <label>Фильтр
+            <select id="filter">
+                <option value="Negative">Негатив</option>
+                <option value="Mirror">Зеркало</option>
+                <option value="Blur">Размытие</option>
+                <option value="Sharpen">Резкость</option>
+            </select>
+        </label>
+        <label id="blurBox" hidden>Радиус размытия
+            <input type="number" id="blur" value="5" min="0" step="0.5">
+        </label>
+        <button type="submit">Отправить на обработку</button>
+    </form>
+
+    <h3>Задачи</h3>
+    <div id="tasks"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script>
+        // Адрес WebApi (куда отправляем картинки). Если порт другой, поменяйте здесь.
+        const API = "http://localhost:5064";
+
+        // Пока в проекте нет нормальной авторизации, "пользователь" это случайный GUID,
+        // который запоминается в браузере.
+        let userId = localStorage.getItem("userId");
+        if (!userId) {
+            userId = crypto.randomUUID();
+            localStorage.setItem("userId", userId);
+        }
+
+        const taskRows = {}; // taskId -> элемент на странице
+
+        function addTaskRow(taskId, filter) {
+            const row = document.createElement("div");
+            row.className = "task";
+            row.innerHTML = '<div></div><div class="status"></div><div class="result"></div>';
+            row.children[0].textContent = "Задача " + taskId.slice(0, 8) + " · " + filter;
+            document.getElementById("tasks").prepend(row);
+            taskRows[taskId] = row;
+            setStatus(taskId, "В очереди…", "Pending");
+        }
+
+        function setStatus(taskId, text, cls) {
+            const el = taskRows[taskId]?.querySelector(".status");
+            if (!el) return;
+            el.textContent = text;
+            el.className = "status " + (cls || "");
+        }
+
+        async function showResult(taskId) {
+            const response = await fetch(API + "/tasks/" + taskId + "/result");
+            if (!response.ok) { setStatus(taskId, "Не удалось скачать результат", "Failed"); return; }
+            const url = URL.createObjectURL(await response.blob());
+            const box = taskRows[taskId].querySelector(".result");
+            const img = document.createElement("img");
+            img.src = url;
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = taskId + ".png";
+            link.textContent = "Скачать";
+            box.append(img, document.createElement("br"), link);
+        }
+
+        // --- SignalR: получаем уведомления о готовности ---
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/hubs/notifications?userId=" + userId)
+            .withAutomaticReconnect()
+            .build();
+
+        connection.on("TaskCompleted", (data) => {
+            setStatus(data.taskId, "Готово", "Completed");
+            showResult(data.taskId);
+        });
+        connection.on("TaskFailed", (data) => {
+            setStatus(data.taskId, "Ошибка: " + data.error, "Failed");
+        });
+        connection.onreconnected(() => setConn("подключено"));
+        connection.onclose(() => setConn("нет связи"));
+
+        function setConn(text) {
+            document.getElementById("conn").textContent = "Уведомления: " + text;
+        }
+
+        connection.start().then(() => setConn("подключено")).catch(() => setConn("нет связи"));
+
+        // --- Форма ---
+        const filterSelect = document.getElementById("filter");
+        filterSelect.onchange = () => {
+            document.getElementById("blurBox").hidden = filterSelect.value !== "Blur";
+        };
+
+        document.getElementById("form").onsubmit = async (e) => {
+            e.preventDefault();
+            const body = new FormData();
+            body.append("file", document.getElementById("file").files[0]);
+            body.append("filter", filterSelect.value);
+            body.append("blurRadius", document.getElementById("blur").value);
+            body.append("userId", userId);
+
+            const response = await fetch(API + "/tasks", { method: "POST", body });
+            const data = await response.json();
+            if (!response.ok) { alert(data.error || "Ошибка при отправке"); return; }
+            addTaskRow(data.id, filterSelect.value);
+        };
+    </script>
+</body>
+</html>
