@@ -19,7 +19,7 @@ public class MongoTaskRepository : ITaskRepository
         return task;
     }
 
-    public Task<ImageTask?> FindByIdAsync(string id, CancellationToken cancellationToken = default)
+    public Task<ImageTask> FindByIdAsync(string id, CancellationToken cancellationToken = default)
         => _tasks.Find(t => t.Id == id).FirstOrDefaultAsync(cancellationToken);
 
     public Task UpdateAsync(ImageTask task, CancellationToken cancellationToken = default)

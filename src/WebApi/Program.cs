@@ -1,4 +1,5 @@
 using MassTransit;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Prometheus;
 using Serilog;
@@ -21,6 +22,7 @@ builder.Services.AddSwaggerGen();
 
 var mongoClient = new MongoClient(builder.Configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017");
 var mongoDatabase = mongoClient.GetDatabase(builder.Configuration["Mongo:Database"] ?? "pixelqueue");
+
 
 builder.Services.AddSingleton<IMongoDatabase>(mongoDatabase);
 builder.Services.AddSingleton<ITaskRepository, MongoTaskRepository>();
