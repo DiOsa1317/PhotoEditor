@@ -9,6 +9,7 @@
 
 ## Метрики
 - Библиотека: prometheus-net.AspNetCore, адрес `/metrics`
+- Метрики и JSON-логи есть у всех трёх сервисов: WebApi (5064), Worker (5209), SignalR (5228)
 - Основные метрики:
     - `http_requests_received_total`: сколько запросов обработано (по методу, адресу и коду ответа);
     - `http_request_duration_seconds`: время ответа;
@@ -17,8 +18,10 @@
 - Дальше: сбор Prometheus, свои метрики (`tasks_pending_total`, время обработки задачи)
 
 ## События очереди
-- `TaskCreated`, `TaskCompleted`, `TaskFailed`
-- В `TaskCompleted` и `TaskFailed` передаются поля `taskId`, `userId`, `status`.
+- `TaskCreated` (TaskId, UserId, Filter, BlurRadius, SourceFileId): WebApi публикует после создания задачи
+- `TaskCompleted` (TaskId, UserId, ResultFileId): Worker публикует после успешной обработки
+- `TaskFailed` (TaskId, UserId, Error): Worker публикует при ошибке
+- SignalR-сервис получает `TaskCompleted` и `TaskFailed` и пересылает их пользователю
 
 ## Трассировка (планируется)
 - OpenTelemetry и Jaeger: путь запроса WebApi → RabbitMQ → Worker → MongoDB → SignalR

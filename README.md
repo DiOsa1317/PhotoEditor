@@ -5,7 +5,7 @@
 ## Архитектура
 - **WebApi** — REST API: регистрация, вход, загрузка задачи, получение результата
 - **Worker** — фоновая обработка изображений (Magick.NET: негатив, зеркало, размытие, резкость)
-- **SignalR** — real-time уведомления (пока шаблон)
+- **SignalR** — сервис уведомлений: слушает события `TaskCompleted` и `TaskFailed` из RabbitMQ и отправляет их пользователю через хаб `/hubs/notifications`. Внутри лежит простой веб-клиент (`src/SignalR/wwwroot`)
 - **MongoDB + GridFS** — хранение задач и файлов
 - **RabbitMQ + MassTransit** — очередь задач
 
@@ -14,7 +14,8 @@
 2. Загружает изображение и выбирает фильтр (`POST /tasks`)
 3. Сервер сразу отвечает со статусом `pending`
 4. Worker обрабатывает изображение в фоне
-5. Клиент скачивает результат (`GET /tasks/{id}/result`)
+5. Когда Worker закончил, SignalR-сервис присылает клиенту уведомление (`TaskCompleted` или `TaskFailed`)
+6. Клиент скачивает результат (`GET /tasks/{id}/result`)
 
 ## Быстрый запуск
 
@@ -36,7 +37,14 @@ dotnet run --project src/Worker
 # http://localhost:5209
 ```
 
-### 4. Проверка через curl
+### 4. SignalR и веб-клиент
+```bash
+dotnet run --project src/SignalR
+# http://localhost:5228
+```
+Открой `http://localhost:5228`, выбери картинку и фильтр. Результат появится на странице сам, когда Worker закончит обработку. Для работы клиента WebApi должен быть запущен.
+
+### 5. Проверка через curl
 ```bash
 # Регистрация
 curl -X POST http://localhost:5064/register -H "Content-Type: application/json" -d '{"login":"user1","password":"pass1"}'
