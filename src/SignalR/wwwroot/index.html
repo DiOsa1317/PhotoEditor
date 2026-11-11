@@ -5,17 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>PixelQueue</title>
     <style>
-        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+        :root {
+            color-scheme: light dark;
+            --bg: #ffffff;
+            --text: #222222;
+            --muted: #777777;
+            --border: #dddddd;
+            --ok: #1a8f3c;
+            --error: #c62828;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #16181d;
+                --text: #e6e6e6;
+                --muted: #9aa0aa;
+                --border: #333844;
+                --ok: #4cd07a;
+                --error: #ff6b6b;
+            }
+        }
+
+        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; background: var(--bg); color: var(--text); }
         h1 { margin-bottom: 0.2rem; }
-        .muted { color: #777; font-size: 0.85rem; }
-        form { display: grid; gap: 0.7rem; margin: 1.5rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; }
+        .muted { color: var(--muted); font-size: 0.85rem; }
+        form { display: grid; gap: 0.7rem; margin: 1.5rem 0; padding: 1rem; border: 1px solid var(--border); border-radius: 8px; }
         label { display: grid; gap: 0.2rem; font-size: 0.9rem; }
         [hidden] { display: none !important; }
         button { padding: 0.6rem; border: 0; border-radius: 6px; background: #3b6cf6; color: #fff; font-size: 1rem; cursor: pointer; }
-        .task { padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 0.7rem; }
+        .task { padding: 0.8rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.7rem; }
         .status { font-weight: 600; }
-        .status.Completed { color: #1a8f3c; }
-        .status.Failed { color: #c62828; }
+        .status.Completed { color: var(--ok); }
+        .status.Failed { color: var(--error); }
         .task img { max-width: 100%; margin-top: 0.6rem; border-radius: 6px; }
         #conn { font-size: 0.85rem; }
     </style>
