@@ -1,6 +1,8 @@
 using MassTransit;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Prometheus;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -42,6 +44,16 @@ builder.Services.AddMassTransit(x =>
         });
     });
 });
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("webapi"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation(options => options.Filter = context =>
+            !context.Request.Path.StartsWithSegments("/metrics") &&
+            !context.Request.Path.StartsWithSegments("/swagger"))
+        .AddSource("MassTransit")
+        .AddSource("MongoDB.Driver")
+        .AddOtlpExporter());
 
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
