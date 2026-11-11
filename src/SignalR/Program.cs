@@ -1,4 +1,6 @@
 using MassTransit;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Notifications;
 using Prometheus;
 using Serilog;
@@ -11,6 +13,7 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
     .WriteTo.Console(new CompactJsonFormatter()));
 
 builder.Services.AddSignalR();
+builder.Services.AddHealthChecks();
 
 builder.Services.AddMassTransit(x =>
 {
@@ -37,5 +40,12 @@ app.UseHttpMetrics();
 
 app.MapHub<NotificationsHub>("/hubs/notifications");
 app.MapMetrics();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready"),
+    ResultStatusCodes = { [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable }
+});
 
 app.Run();
