@@ -15,7 +15,7 @@ public class MagickImageProcessor : IImageProcessor
             {
                 using var image = new MagickImage(source);
                 Apply(image, filterRequest);
-                return image.ToByteArray();
+                return image.ToByteArray(MagickFormat.Png);
             }
             catch (ImageProcessingException)
             {
@@ -32,7 +32,7 @@ public class MagickImageProcessor : IImageProcessor
     {
         switch (filterRequest.FilterType)
         {
-            case FilterType.Negative: image.Negate(); break;
+            case FilterType.Negative: image.Negate(Channels.RGB); break;
             case FilterType.Mirror: image.Flop(); break;
             case FilterType.Blur:
                 image.Blur(0, filterRequest.BlurRadius > 0 ? filterRequest.BlurRadius : 5);

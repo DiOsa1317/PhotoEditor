@@ -2,6 +2,8 @@ using MassTransit;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Notifications;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Prometheus;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -13,6 +15,15 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
     .WriteTo.Console(new CompactJsonFormatter()));
 
 builder.Services.AddSignalR();
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("signalr"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation(options => options.Filter = context =>
+            !context.Request.Path.StartsWithSegments("/metrics") &&
+            !context.Request.Path.StartsWithSegments("/health"))
+        .AddSource("MassTransit")
+        .AddOtlpExporter());
+
 builder.Services.AddHealthChecks();
 
 builder.Services.AddMassTransit(x =>
