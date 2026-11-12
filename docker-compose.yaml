@@ -40,6 +40,7 @@
       RabbitMq:Host: rabbitmq
       RabbitMq:Username: guest
       RabbitMq:Password: guest
+      Cors:Origins: http://localhost:5001
     depends_on:
       mongodb:
         condition: service_healthy
@@ -74,6 +75,7 @@
       RabbitMq:Host: rabbitmq
       RabbitMq:Username: guest
       RabbitMq:Password: guest
+      Api:BaseUrl: http://localhost:5000
     depends_on:
       rabbitmq:
         condition: service_healthy

@@ -34,7 +34,7 @@ public class TasksController : ControllerBase
     [HttpPost]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<TaskResponse>> Create(
-        [FromForm] IFormFile file,
+        IFormFile file,
         [FromForm] string filter,
         [FromForm] double blurRadius = 0,
         [FromForm] string userId = "anonymous"
@@ -51,8 +51,8 @@ public class TasksController : ControllerBase
             {
                 error = BlurRadiusShouldBePositiveText
             });
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new  {error = BadUserIdText});
+        if (!Guid.TryParse(userId, out _))
+            return BadRequest(new { error = BadUserIdText });
 
         await using var stream = file.OpenReadStream();
         var sourceFileId = await _fileStorage.SaveAsync(stream, file.FileName, file.ContentType);

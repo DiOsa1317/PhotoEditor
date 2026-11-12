@@ -1,6 +1,8 @@
 using MassTransit;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Prometheus;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -16,6 +18,13 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 
 
 builder.Services.AddControllers();
+var allowedOrigins = builder.Configuration["Cors:Origins"]?
+                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                     ?? new[] { "http://localhost:5228" };
+builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
+    .WithOrigins(allowedOrigins)
+    .AllowAnyHeader()
+    .AllowAnyMethod()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -38,6 +47,16 @@ builder.Services.AddMassTransit(x =>
         });
     });
 });
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(resource => resource.AddService("webapi"))
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation(options => options.Filter = context =>
+            !context.Request.Path.StartsWithSegments("/metrics") &&
+            !context.Request.Path.StartsWithSegments("/swagger"))
+        .AddSource("MassTransit")
+        .AddSource("MongoDB.Driver")
+        .AddOtlpExporter());
 
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
@@ -64,6 +83,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseCors();
 app.UseHttpMetrics();
 
 
