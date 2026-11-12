@@ -18,8 +18,11 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
 
 
 builder.Services.AddControllers();
+var allowedOrigins = builder.Configuration["Cors:Origins"]?
+                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                     ?? new[] { "http://localhost:5228" };
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
-    .WithOrigins("http://localhost:5228")
+    .WithOrigins(allowedOrigins)
     .AllowAnyHeader()
     .AllowAnyMethod()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

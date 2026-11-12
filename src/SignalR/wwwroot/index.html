@@ -69,8 +69,8 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <script>
-        // Адрес WebApi (куда отправляем картинки). Если порт другой, поменяйте здесь.
-        const API = "http://localhost:5064";
+        // Адрес WebApi (куда отправляем картинки) берём у сервера: он задаётся настройкой Api:BaseUrl.
+        const apiUrl = fetch("/config").then(r => r.json()).then(c => c.apiUrl);
 
         // Пока в проекте нет нормальной авторизации, "пользователь" это случайный GUID,
         // который запоминается в браузере.
@@ -100,6 +100,7 @@
         }
 
         async function showResult(taskId) {
+            const API = await apiUrl;
             const response = await fetch(API + "/tasks/" + taskId + "/result");
             if (!response.ok) { setStatus(taskId, "Не удалось скачать результат", "Failed"); return; }
             const url = URL.createObjectURL(await response.blob());
@@ -150,12 +151,13 @@
             body.append("userId", userId);
 
             try {
+                const API = await apiUrl;
                 const response = await fetch(API + "/tasks", { method: "POST", body });
                 const data = await response.json();
                 if (!response.ok) { alert(data.error || "Ошибка при отправке"); return; }
                 addTaskRow(data.id, filterSelect.value);
             } catch (err) {
-                alert("Не удалось связаться с WebApi (" + API + "). Он запущен?");
+                alert("Не удалось связаться с WebApi. Он запущен?");
             }
         };
     </script>

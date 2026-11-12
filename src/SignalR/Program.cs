@@ -50,6 +50,7 @@ app.UseRouting();
 app.UseHttpMetrics();
 
 app.MapHub<NotificationsHub>("/hubs/notifications");
+app.MapGet("/config", () => new { apiUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5064" });
 app.MapMetrics();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
