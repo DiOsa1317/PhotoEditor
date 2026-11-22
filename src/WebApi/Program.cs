@@ -58,7 +58,7 @@ builder.Services.AddOpenTelemetry()
         .AddSource("MongoDB.Driver")
         .AddOtlpExporter());
 
-builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
+builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
 
 var app = builder.Build();
