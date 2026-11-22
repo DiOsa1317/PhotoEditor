@@ -8,7 +8,6 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Mongo;
-using Shared.Infrastructure.Repository.Ram;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -59,7 +58,7 @@ builder.Services.AddOpenTelemetry()
         .AddOtlpExporter());
 
 builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
-builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
+builder.Services.AddSingleton<ISessionRepository, MongoSessionRepository>();
 
 var app = builder.Build();
 app.Use(async (context, next) =>
