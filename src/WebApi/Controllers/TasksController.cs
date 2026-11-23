@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Shared.Contracts;
@@ -13,22 +14,28 @@ public class TasksController : ControllerBase
     private readonly ITaskRepository _taskRepository;
     private readonly IFileStorage _fileStorage;
     private readonly IPublishEndpoint _publishEndpoint;
+    private readonly ISessionRepository _sessionRepository;
 
     private const string NoFileText = "Файл не передан";
     private const string ShouldBeImageText = "Файл должен быть изображением";
     private const string BadFilterText = "Неверный фильтр";
     private const string BlurRadiusShouldBePositiveText = "blurRadius не может быть отрицательным";
-    private const string BadUserIdText = "Неверный userId";
+    private const string InvalidSessionText = "Отсутствует или недействительна сессия";
     private const string BadTaskIdText = "Неверный id задачи";
     private const string TaskNotFoundText = "Задача не найдена";
     private const string ResultNotFound = "Результат ещё не готов";
     
 
-    public TasksController(ITaskRepository taskRepository, IFileStorage fileStorage, IPublishEndpoint publishEndpoint)
+    public TasksController(
+        ITaskRepository taskRepository,
+        IFileStorage fileStorage,
+        IPublishEndpoint publishEndpoint,
+        ISessionRepository sessionRepository)
     {
         _taskRepository = taskRepository;
         _fileStorage = fileStorage;
         _publishEndpoint = publishEndpoint;
+        _sessionRepository = sessionRepository;
     }
 
     [HttpPost]
@@ -37,9 +44,18 @@ public class TasksController : ControllerBase
         IFormFile file,
         [FromForm] string filter,
         [FromForm] double blurRadius = 0,
-        [FromForm] string userId = "anonymous"
+        [FromHeader(Name = "Authorization")] string? authorization = null
         )
     {
+        if (!AuthenticationHeaderValue.TryParse(authorization, out var authHeader) ||
+            !string.Equals(authHeader.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(authHeader.Parameter))
+            return Unauthorized(new { error = InvalidSessionText });
+
+        var user = _sessionRepository.GetUserBySessionId(authHeader.Parameter);
+        if (user is null)
+            return Unauthorized(new { error = InvalidSessionText });
+
         if (file is  null || file.Length == 0)
             return BadRequest(new {error = NoFileText});
         if (!file.ContentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ?? true)
@@ -51,15 +67,12 @@ public class TasksController : ControllerBase
             {
                 error = BlurRadiusShouldBePositiveText
             });
-        if (!Guid.TryParse(userId, out _))
-            return BadRequest(new { error = BadUserIdText });
-
         await using var stream = file.OpenReadStream();
         var sourceFileId = await _fileStorage.SaveAsync(stream, file.FileName, file.ContentType);
 
         var task = new ImageTask
         {
-            UserId = userId,
+            UserId = user.Id,
             Filter = filterType,
             BlurRadius = blurRadius,
             SourceFileId = sourceFileId

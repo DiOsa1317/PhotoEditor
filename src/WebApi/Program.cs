@@ -1,6 +1,7 @@
 using MassTransit;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Microsoft.OpenApi.Models;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
 using Prometheus;
@@ -8,6 +9,7 @@ using Serilog;
 using Serilog.Formatting.Compact;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Mongo;
+using WebApi;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,7 +28,17 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy
     .AllowAnyMethod()));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Session", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "SessionId",
+        Description = "Введите SessionId, полученный при входе в систему."
+    });
+    options.OperationFilter<SessionSecurityOperationFilter>();
+});
 
 var mongoClient = new MongoClient(builder.Configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017");
 var mongoDatabase = mongoClient.GetDatabase(builder.Configuration["Mongo:Database"] ?? "pixelqueue");
