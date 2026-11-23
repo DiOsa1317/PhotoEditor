@@ -1,4 +1,5 @@
 using MassTransit;
+using LogContext = Serilog.Context.LogContext;
 
 namespace Notifications;
 
@@ -12,6 +13,6 @@ public static class CorrelationHelper
         var id = context.Headers.Get<string>(HeaderName)
                  ?? context.ConversationId?.ToString()
                  ?? "unknown";
-        return Serilog.Context.LogContext.PushProperty("CorrelationId", id);
+        return LogContext.PushProperty("CorrelationId", id);
     }
 }

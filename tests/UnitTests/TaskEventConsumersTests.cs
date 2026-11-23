@@ -10,8 +10,8 @@ namespace UnitTests;
 
 public class TaskEventConsumersTests
 {
-    private Mock<IClientProxy> _groupProxy = null!;
     private Mock<IHubClients> _clients = null!;
+    private Mock<IClientProxy> _groupProxy = null!;
     private Mock<IHubContext<NotificationsHub>> _hub = null!;
     private object?[]? _sentArgs;
 
@@ -41,8 +41,9 @@ public class TaskEventConsumersTests
 
         await consumer.Consume(ContextFor(message));
 
-        _clients.Verify(c => c.Group(message.UserId.ToString()), Times.Once);
-        _groupProxy.Verify(p => p.SendCoreAsync("TaskCompleted", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        _clients.Verify(c => c.Group(message.SessionId.ToString()), Times.Once);
+        _groupProxy.Verify(p => p.SendCoreAsync("TaskCompleted", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()),
+            Times.Once);
 
         var payload = JsonSerializer.Serialize(_sentArgs![0]);
         Assert.Multiple(() =>
@@ -60,8 +61,9 @@ public class TaskEventConsumersTests
 
         await consumer.Consume(ContextFor(message));
 
-        _clients.Verify(c => c.Group(message.UserId.ToString()), Times.Once);
-        _groupProxy.Verify(p => p.SendCoreAsync("TaskFailed", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()), Times.Once);
+        _clients.Verify(c => c.Group(message.SessionId.ToString()), Times.Once);
+        _groupProxy.Verify(p => p.SendCoreAsync("TaskFailed", It.IsAny<object?[]>(), It.IsAny<CancellationToken>()),
+            Times.Once);
 
         var payload = JsonSerializer.Serialize(_sentArgs![0]);
         Assert.Multiple(() =>

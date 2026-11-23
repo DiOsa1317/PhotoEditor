@@ -1,5 +1,4 @@
 using MassTransit;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -9,10 +8,10 @@ using Serilog.Formatting.Compact;
 using Shared.Infrastructure.Interfaces;
 using Shared.Infrastructure.Mongo;
 using Shared.Infrastructure.Repository.Ram;
-
+using LogContext = Serilog.Context.LogContext;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Host.UseSerilog((ctx, cfg) => cfg
+builder.Host.UseSerilog((_, cfg) => cfg
     .Enrich.FromLogContext()
     .WriteTo.Console(new CompactJsonFormatter()));
 
@@ -33,12 +32,12 @@ var mongoClient = new MongoClient(builder.Configuration["Mongo:ConnectionString"
 var mongoDatabase = mongoClient.GetDatabase(builder.Configuration["Mongo:Database"] ?? "pixelqueue");
 
 
-builder.Services.AddSingleton<IMongoDatabase>(mongoDatabase);
+builder.Services.AddSingleton(mongoDatabase);
 builder.Services.AddSingleton<ITaskRepository, MongoTaskRepository>();
 builder.Services.AddSingleton<IFileStorage, MongoFileStorage>();
 builder.Services.AddMassTransit(x =>
 {
-    x.UsingRabbitMq((context, cfg) =>
+    x.UsingRabbitMq((_, cfg) =>
     {
         cfg.Host(builder.Configuration["RabbitMq:Host"] ?? "localhost", host =>
         {
@@ -67,7 +66,7 @@ app.Use(async (context, next) =>
     var correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault()
                         ?? Guid.NewGuid().ToString();
     context.Response.Headers["X-Correlation-Id"] = correlationId;
-    using (Serilog.Context.LogContext.PushProperty("CorrelationId", correlationId))
+    using (LogContext.PushProperty("CorrelationId", correlationId))
     {
         await next();
     }
@@ -88,7 +87,7 @@ app.UseHttpMetrics();
 
 
 app.UseAuthorization();
-    
+
 app.MapControllers();
 // app.MapControllerRoute(
 //     name : "default",
