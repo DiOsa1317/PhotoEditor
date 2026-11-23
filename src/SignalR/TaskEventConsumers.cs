@@ -20,13 +20,13 @@ public class TaskCompletedConsumer : IConsumer<TaskCompleted>
         using (CorrelationHelper.Push(context))
         {
             var message = context.Message;
-            await _hub.Clients.Group(message.UserId.ToString())
+            await _hub.Clients.Group(message.SessionId.ToString())
                 .SendAsync("TaskCompleted",
                     new { taskId = message.TaskId, resultFileId = message.ResultFileId },
                     context.CancellationToken);
 
-            _logger.LogInformation("Notification sent: task {TaskId} completed for user {UserId}",
-                message.TaskId, message.UserId);
+            _logger.LogInformation("Notification sent: task {TaskId} completed for user {SessionId}",
+                message.TaskId, message.SessionId);
         }
     }
 }
@@ -47,13 +47,13 @@ public class TaskFailedConsumer : IConsumer<TaskFailed>
         using (CorrelationHelper.Push(context))
         {
             var message = context.Message;
-            await _hub.Clients.Group(message.UserId.ToString())
+            await _hub.Clients.Group(message.SessionId.ToString())
                 .SendAsync("TaskFailed",
                     new { taskId = message.TaskId, error = message.Error },
                     context.CancellationToken);
 
-            _logger.LogInformation("Notification sent: task {TaskId} failed for user {UserId}",
-                message.TaskId, message.UserId);
+            _logger.LogInformation("Notification sent: task {TaskId} failed for user {SessionId}",
+                message.TaskId, message.SessionId);
         }
     }
 }

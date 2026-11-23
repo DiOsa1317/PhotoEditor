@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using MassTransit;
 using Shared.Contracts;
 using Shared.Domain;
 using Shared.Infrastructure.Interfaces;
+using Shared.Telemetry;
 using Worker.Infrastructure.Interfaces;
 
 namespace Worker.Infrastructure.Consumers;
@@ -31,12 +33,40 @@ public class TaskCreatedConsumer : IConsumer<TaskCreated>
         var task = await _taskRepository.FindByIdAsync(message.TaskId.ToString(), context.CancellationToken);
         if (task == null) return;
 
+        if (task.Status == ImageTaskStatus.Completed || task.Status == ImageTaskStatus.Failed)
+            return;
+
+        if (task.Status == ImageTaskStatus.Processing)
+        {
+            if (task.LeaseUntil > DateTime.UtcNow)
+                return;
+            task.Attempts += 1;
+        }
+
+        if (task.Attempts >= 3)
+        {
+            task.Status = ImageTaskStatus.Failed;
+            task.Error = "Max attempts reached";
+            task.LastUpdated = DateTime.UtcNow;
+            task.LeaseOwner = string.Empty;
+            task.LeaseUntil = DateTime.UtcNow;
+            await _taskRepository.UpdateAsync(task, context.CancellationToken);
+            await _publishEndpoint.Publish(new TaskFailed(Guid.Parse(task.Id),
+                Guid.Parse(task.SessionId), task.Error), context.CancellationToken);
+            TaskMetrics.TaskFailed();
+            return;
+        }
+
         task.Status = ImageTaskStatus.Processing;
         task.Attempts += 1;
         task.LastUpdated = DateTime.UtcNow;
         task.LeaseOwner = Guid.NewGuid().ToString();
         task.LeaseUntil = DateTime.UtcNow.AddMinutes(5);
         await _taskRepository.UpdateAsync(task, context.CancellationToken);
+
+        TaskMetrics.TaskReceived();
+
+        var stopwatch = Stopwatch.StartNew();
 
         try
         {
@@ -61,8 +91,12 @@ public class TaskCreatedConsumer : IConsumer<TaskCreated>
             task.LeaseUntil = DateTime.UtcNow;
             await _taskRepository.UpdateAsync(task, context.CancellationToken);
 
-            await _publishEndpoint.Publish(new TaskCompleted(Guid.Parse(task.Id), Guid.Parse(task.UserId), task.ResultFileId),
+            await _publishEndpoint.Publish(new TaskCompleted(Guid.Parse(task.Id),
+                    Guid.Parse(task.SessionId), task.ResultFileId),
                 context.CancellationToken);
+
+            stopwatch.Stop();
+            TaskMetrics.TaskCompleted(stopwatch.Elapsed.TotalSeconds);
         }
         catch (Exception ex)
         {
@@ -72,7 +106,10 @@ public class TaskCreatedConsumer : IConsumer<TaskCreated>
             task.LeaseOwner = string.Empty;
             task.LeaseUntil = DateTime.UtcNow;
             await _taskRepository.UpdateAsync(task, context.CancellationToken);
-            await _publishEndpoint.Publish(new TaskFailed(Guid.Parse(task.Id), Guid.Parse(task.UserId), ex.Message), context.CancellationToken);
+            await _publishEndpoint.Publish(new TaskFailed(Guid.Parse(task.Id),
+                Guid.Parse(task.SessionId), ex.Message), context.CancellationToken);
+
+            TaskMetrics.TaskFailed();
         }
     }
 }

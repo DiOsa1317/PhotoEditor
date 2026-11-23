@@ -1,6 +1,4 @@
-using MongoDB.Driver;
 using Shared.Domain;
-using Shared.Infrastructure.Interfaces;
 
 namespace Shared.Infrastructure.Interfaces;
 
@@ -11,4 +9,5 @@ public interface ITaskRepository
     Task UpdateAsync(ImageTask task, CancellationToken cancellationToken = default);
     Task DeleteAsync(string id, CancellationToken cancellationToken = default);
     Task<PageList<ImageTask>> GetPageAsync(int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+    Task<List<ImageTask>> GetStuckTasksAsync(CancellationToken cancellationToken = default);
 }
