@@ -29,6 +29,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\SignalR\SignalR.csproj" />
         <ProjectReference Include="..\..\src\Worker\Worker.csproj"/>
+        <ProjectReference Include="..\..\src\WebApi\WebApi.csproj" />
     </ItemGroup>
 
 </Project>

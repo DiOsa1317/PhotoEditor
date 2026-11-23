@@ -48,13 +48,8 @@ public class UsersController : Controller
 
         var user = new User(dto.Login, Guid.NewGuid().ToString(), "hash", DateTime.UtcNow);
 
-        // if (UserStorage.GetUserByLogin(user) != null)
-        // {
-        //     return BadRequest();
-        // }
-
         if (!UserStorage.PostUser(user))
-            return BadRequest();
+            return Conflict(new { error = "Пользователь с таким логином уже существует." });
         return Created();
     }
 

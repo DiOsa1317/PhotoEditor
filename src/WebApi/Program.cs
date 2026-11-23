@@ -17,6 +17,12 @@ builder.Host.UseSerilog((ctx, cfg) => cfg
     .Enrich.FromLogContext()
     .WriteTo.Console(new CompactJsonFormatter()));
 
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+        context.ProblemDetails.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+});
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
 builder.Services.AddControllers();
 var allowedOrigins = builder.Configuration["Cors:Origins"]?
@@ -73,6 +79,8 @@ builder.Services.AddSingleton<IUserRepository, MongoUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, MongoSessionRepository>();
 
 var app = builder.Build();
+app.UseExceptionHandler();
+app.UseStatusCodePages();
 app.Use(async (context, next) =>
 {
     var correlationId = context.Request.Headers["X-Correlation-Id"].FirstOrDefault()
