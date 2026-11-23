@@ -14,6 +14,7 @@ public class WebApiInputValidationTests
     [TestCase("ab", "password123")]
     [TestCase("user", "short")]
     [TestCase("", "password123")]
+    [TestCase("user", "")]
     public void CredentialsDto_RejectsValuesOutsideConfiguredLimits(string login, string password)
     {
         var credentials = new CredentialsDto(login, password);
@@ -26,6 +27,31 @@ public class WebApiInputValidationTests
             validateAllProperties: true);
 
         Assert.That(isValid, Is.False);
+    }
+
+    [Test]
+    public void CredentialsDto_RejectsLoginLongerThanMaximum()
+    {
+        Assert.That(IsValid(new CredentialsDto(new string('a', 33), "password123")), Is.False);
+    }
+
+    [Test]
+    public void CredentialsDto_RejectsPasswordLongerThanMaximum()
+    {
+        Assert.That(IsValid(new CredentialsDto("user", new string('p', 129))), Is.False);
+    }
+
+    [Test]
+    public void CredentialsDto_AcceptsValuesAtLengthLimits()
+    {
+        var minimumCredentials = new CredentialsDto("abc", "12345678");
+        var maximumCredentials = new CredentialsDto(new string('a', 32), new string('p', 128));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(IsValid(minimumCredentials), Is.True);
+            Assert.That(IsValid(maximumCredentials), Is.True);
+        });
     }
 
     [Test]
@@ -90,6 +116,13 @@ public class WebApiInputValidationTests
         };
         return controller;
     }
+
+    private static bool IsValid(CredentialsDto credentials) =>
+        Validator.TryValidateObject(
+            credentials,
+            new ValidationContext(credentials),
+            new List<ValidationResult>(),
+            validateAllProperties: true);
 
     private static FormFile CreateFile(byte[] contents)
     {
