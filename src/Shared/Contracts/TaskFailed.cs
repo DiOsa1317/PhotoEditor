@@ -1,3 +1,3 @@
 namespace Shared.Contracts;
 
-public record TaskFailed(Guid TaskId, Guid UserId, string Error);
+public record TaskFailed(Guid TaskId, Guid SessionId, string Error);
