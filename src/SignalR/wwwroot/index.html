@@ -136,10 +136,10 @@
 
     // Пока в проекте нет нормальной авторизации, "пользователь" это случайный GUID,
     // который запоминается в браузере.
-    let userId = localStorage.getItem("userId");
-    if (!userId) {
-        userId = crypto.randomUUID();
-        localStorage.setItem("userId", userId);
+    let sessionId = localStorage.getItem("sessionId");
+    if (!sessionId) {
+        sessionId = crypto.randomUUID();
+        localStorage.setItem("sessionId", sessionId);
     }
 
     const taskRows = {}; // taskId -> элемент на странице
@@ -181,7 +181,7 @@
 
     // --- SignalR: получаем уведомления о готовности ---
     const connection = new signalR.HubConnectionBuilder()
-        .withUrl("/hubs/notifications?userId=" + userId)
+        .withUrl("/hubs/notifications?sessionId=" + sessionId)
         .withAutomaticReconnect()
         .build();
 
@@ -213,7 +213,7 @@
         body.append("file", document.getElementById("file").files[0]);
         body.append("filter", filterSelect.value);
         body.append("blurRadius", document.getElementById("blur").value);
-        body.append("userId", userId);
+        body.append("sessionId", sessionId);
 
         try {
             const API = await apiUrl;

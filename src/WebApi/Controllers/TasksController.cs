@@ -16,23 +16,16 @@ public class TasksController : ControllerBase
     private readonly IPublishEndpoint _publishEndpoint;
     private readonly ISessionRepository _sessionRepository;
 
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
-    private const long MaxRequestSizeBytes = MaxFileSizeBytes + 1024 * 1024;
     private const string NoFileText = "Файл не передан";
     private const string ShouldBeImageText = "Файл должен быть изображением JPEG, PNG или WebP";
     private const string FileTooLargeText = "Размер файла превышает 10 MiB";
     private const string BadFilterText = "Неверный фильтр";
-    private const string BlurRadiusShouldBePositiveText = "blurRadius не может быть отрицательным";
-    private const string BadSessionIdText = "Неверный sessionId";
     private const string BlurRadiusShouldBePositiveText = "blurRadius должен быть конечным числом не меньше 0";
-    private const string InvalidSessionText = "Отсутствует или недействительна сессия";
     private const string BadTaskIdText = "Неверный id задачи";
     private const string TaskNotFoundText = "Задача не найдена";
     private const string ResultNotFound = "Результат ещё не готов";
-    private readonly IFileStorage _fileStorage;
-    private readonly IPublishEndpoint _publishEndpoint;
-    private readonly ITaskRepository _taskRepository;
-
+    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+    private const long MaxRequestSizeBytes = MaxFileSizeBytes + 1024 * 1024;
 
     public TasksController(
         ITaskRepository taskRepository,
@@ -53,19 +46,29 @@ public class TasksController : ControllerBase
         IFormFile file,
         [FromForm] string filter,
         [FromForm] double blurRadius = 0,
-        [FromForm] string sessionId = "anonymous"
-    )
-        [FromHeader(Name = "Authorization")] string? authorization = null
-        )
+        [FromForm] string sessionId = "anonymous",
+        [FromHeader(Name = "Authorization")] string? authorization = null)
     {
-        if (!AuthenticationHeaderValue.TryParse(authorization, out var authHeader) ||
-            !string.Equals(authHeader.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
-            string.IsNullOrWhiteSpace(authHeader.Parameter))
-            return Unauthorized(new { error = InvalidSessionText });
+        // Попытка Bearer-авторизации через сессию
+        string resolvedSessionId = sessionId;
+        string userId = Guid.NewGuid().ToString();
 
-        var user = _sessionRepository.GetUserBySessionId(authHeader.Parameter);
-        if (user is null)
-            return Unauthorized(new { error = InvalidSessionText });if (file is null || file.Length == 0)
+        if (AuthenticationHeaderValue.TryParse(authorization, out var authHeader) &&
+            string.Equals(authHeader.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(authHeader.Parameter))
+        {
+            var user = _sessionRepository.GetUserBySessionId(authHeader.Parameter);
+            if (user is not null)
+            {
+                resolvedSessionId = authHeader.Parameter;
+                userId = user.Id;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(resolvedSessionId) || resolvedSessionId == "anonymous")
+            resolvedSessionId = Guid.NewGuid().ToString();
+
+        if (file is null || file.Length == 0)
             return BadRequest(new { error = NoFileText });
         if (file.Length > MaxFileSizeBytes)
             return StatusCode(StatusCodes.Status413PayloadTooLarge, new
@@ -77,24 +80,23 @@ public class TasksController : ControllerBase
         var contentType = await DetectImageContentTypeAsync(file, HttpContext.RequestAborted);
         if (contentType is null)
             return BadRequest(new { error = ShouldBeImageText });
-        if (!Enum.TryParse<FilterType>(filter, true, out var filterType)||
-            !Enum.IsDefined(filterType))return BadRequest(new { error = BadFilterText ,
+        if (!Enum.TryParse<FilterType>(filter, true, out var filterType) ||
+            !Enum.IsDefined(filterType))
+            return BadRequest(new
+            {
+                error = BadFilterText,
                 allowedValues = Enum.GetNames<FilterType>()
             });
         if (!double.IsFinite(blurRadius) || blurRadius < 0)
-            return BadRequest(new
-            {
-                error = BlurRadiusShouldBePositiveText
-            });
-        if (!Guid.TryParse(sessionId, out _))
-            return BadRequest(new { error = BadSessionIdText });
+            return BadRequest(new { error = BlurRadiusShouldBePositiveText });
 
         await using var stream = file.OpenReadStream();
         var sourceFileId = await _fileStorage.SaveAsync(stream, file.FileName, contentType);
 
         var task = new ImageTask
         {
-            SessionId = sessionId,
+            UserId = userId,
+            SessionId = resolvedSessionId,
             Filter = filterType,
             BlurRadius = blurRadius,
             SourceFileId = sourceFileId
