@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapi
+  template:
+    metadata:
+      labels:
+        app: webapi
+    spec:
+      containers:
+        - name: webapi
+          image: pixelqueue-webapi:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 80
+          envFrom:
+            - configMapRef:
+                name: pixelqueue-config
+            - secretRef:
+                name: pixelqueue-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapi
+spec:
+  type: NodePort
+  selector:
+    app: webapi
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
