@@ -47,6 +47,15 @@ public class MongoTaskRepository : ITaskRepository
         return new PageList<ImageTask>(tasks, (int)total, pageNumber, pageSize);
     }
 
+    public async Task<PageList<ImageTask>> GetPageByUserIdAsync(string userId, int pageNumber, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var skip = (pageNumber - 1) * pageSize;
+        var filter = Builders<ImageTask>.Filter.Eq(t => t.UserId, userId);
+        var tasks = await _tasks.Find(filter).SortByDescending(t => t.LastUpdated).Skip(skip).Limit(pageSize).ToListAsync(cancellationToken);
+        var total = await _tasks.CountDocumentsAsync(filter, new CountOptions(), cancellationToken);
+        return new PageList<ImageTask>(tasks, (int)total, pageNumber, pageSize);
+    }
+
     public async Task<List<ImageTask>> GetStuckTasksAsync(CancellationToken cancellationToken = default)
     {
         var filter = Builders<ImageTask>.Filter.And(

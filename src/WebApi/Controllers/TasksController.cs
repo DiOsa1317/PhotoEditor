@@ -49,7 +49,6 @@ public class TasksController : ControllerBase
         [FromForm] string sessionId = "anonymous",
         [FromHeader(Name = "Authorization")] string? authorization = null)
     {
-        // Попытка Bearer-авторизации через сессию
         string resolvedSessionId = sessionId;
         string userId = Guid.NewGuid().ToString();
 
@@ -141,6 +140,26 @@ public class TasksController : ControllerBase
             return "image/webp";
 
         return null;
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<PageList<TaskResponse>>> GetMyTasks(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromHeader(Name = "Authorization")] string? authorization = null)
+    {
+        if (!AuthenticationHeaderValue.TryParse(authorization, out var authHeader) ||
+            !string.Equals(authHeader.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(authHeader.Parameter))
+            return Unauthorized(new { error = "Требуется авторизация" });
+
+        var user = _sessionRepository.GetUserBySessionId(authHeader.Parameter);
+        if (user is null)
+            return Unauthorized(new { error = "Недействительная сессия" });
+
+        var pageList = await _taskRepository.GetPageByUserIdAsync(user.Id, page, pageSize);
+        var responses = pageList.Select(t => new TaskResponse(t.Id, t.SessionId, t.Status, t.SourceFileId)).ToList();
+        return Ok(new PageList<TaskResponse>(responses, pageList.TotalCount, pageList.CurrentPage, pageList.PageSize));
     }
 
     [HttpGet("{id}")]
