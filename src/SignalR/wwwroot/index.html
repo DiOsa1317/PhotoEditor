@@ -73,6 +73,10 @@
             cursor: pointer;
         }
 
+        button.secondary {
+            background: #666;
+        }
+
         .task {
             padding: 0.8rem;
             border: 1px solid var(--border);
@@ -101,12 +105,70 @@
         #conn {
             font-size: 0.85rem;
         }
+
+        .auth-block {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .auth-block input {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .auth-block .row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .auth-block .row button {
+            flex: 1;
+        }
+
+        .auth-status {
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .hint {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
     </style>
 </head>
 <body>
 <h1>PixelQueue</h1>
 <div class="muted">Загрузите картинку, выберите фильтр. Результат появится сам, когда обработка закончится.</div>
 <div class="muted" id="conn">Уведомления: подключаюсь…</div>
+
+<!-- Блок авторизации -->
+<div class="auth-block" id="authBlock">
+    <div id="authForm">
+        <label>Логин
+            <input id="login" type="text" placeholder="Введите логин (мин. 3 символа)" minlength="3" maxlength="32">
+            <span class="hint">От 3 до 32 символов</span>
+        </label>
+        <label>Пароль
+            <input id="password" type="password" placeholder="Введите пароль (мин. 8 символов)" minlength="8" maxlength="128">
+            <span class="hint">От 8 до 128 символов</span>
+        </label>
+        <div class="row">
+            <button type="button" onclick="register()">Зарегистрироваться</button>
+            <button type="button" onclick="login()" class="secondary">Войти</button>
+        </div>
+        <div class="auth-status" id="authStatus"></div>
+    </div>
+    <div hidden id="authInfo">
+        <span class="auth-status" id="authUser"></span>
+        <button type="button" onclick="logout()" class="secondary" style="margin-top:0.5rem;">Выйти</button>
+    </div>
+</div>
 
 <form id="form">
     <label>Изображение
@@ -129,20 +191,22 @@
 <h3>Задачи</h3>
 <div id="tasks"></div>
 
+<h3>Мои задачи</h3>
+<button type="button" id="loadHistoryBtn" onclick="toggleHistory()" class="secondary" style="margin-bottom:0.7rem;">Показать историю</button>
+<div id="history"></div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
 <script>
-    // Адрес WebApi (куда отправляем картинки) берём у сервера: он задаётся настройкой Api:BaseUrl.
     const apiUrl = fetch("/config").then(r => r.json()).then(c => c.apiUrl);
 
-    // Пока в проекте нет нормальной авторизации, "пользователь" это случайный GUID,
-    // который запоминается в браузере.
-    let sessionId = localStorage.getItem("sessionId");
+    // Анонимный sessionId генерируется только при отправке задачи без авторизации
+    let sessionId = localStorage.getItem("authSessionId") || localStorage.getItem("anonSessionId");
     if (!sessionId) {
         sessionId = crypto.randomUUID();
-        localStorage.setItem("sessionId", sessionId);
+        localStorage.setItem("anonSessionId", sessionId);
     }
 
-    const taskRows = {}; // taskId -> элемент на странице
+    const taskRows = {};
 
     function addTaskRow(taskId, filter) {
         const row = document.createElement("div");
@@ -179,7 +243,64 @@
         box.append(img, document.createElement("br"), link);
     }
 
-    // --- SignalR: получаем уведомления о готовности ---
+    let historyVisible = false;
+    async function toggleHistory() {
+        const btn = document.getElementById("loadHistoryBtn");
+        const container = document.getElementById("history");
+        if (historyVisible) {
+            container.innerHTML = "";
+            container.style.display = "none";
+            btn.textContent = "Показать историю";
+            historyVisible = false;
+        } else {
+            container.style.display = "";
+            await loadHistory();
+            btn.textContent = "Скрыть историю";
+            historyVisible = true;
+        }
+    }
+
+    async function loadHistory() {
+        const API = await apiUrl;
+        const headers = {};
+        const sid = localStorage.getItem("authSessionId");
+        if (sid) {
+            headers["Authorization"] = "Bearer " + sid;
+        }
+        const res = await fetch(API + "/tasks?page=1&pageSize=10", { headers });
+        if (!res.ok) {
+            document.getElementById("history").textContent = "Не удалось загрузить историю (нужна авторизация)";
+            return;
+        }
+        const tasks = await res.json();
+        const container = document.getElementById("history");
+        container.innerHTML = "";
+        if (!tasks || tasks.length === 0) {
+            container.textContent = "История пуста";
+            return;
+        }
+        tasks.forEach(t => {
+            const row = document.createElement("div");
+            row.className = "task";
+            row.innerHTML = '<div></div><div class="status"></div><div class="result"></div>';
+            row.children[0].textContent = "Задача " + t.id.slice(0, 8) + " · " + (t.filter || "");
+            const st = row.querySelector(".status");
+            st.textContent = t.status === 2 ? "Готово" : (t.status === 0 ? "В очереди…" : "Обработка…");
+            st.className = "status " + (t.status === 2 ? "Completed" : "");
+            if (t.status === 2) {
+                const box = row.querySelector(".result");
+                const img = document.createElement("img");
+                img.src = API + "/tasks/" + t.id + "/result";
+                const link = document.createElement("a");
+                link.href = API + "/tasks/" + t.id + "/result";
+                link.download = t.id + ".png";
+                link.textContent = "Скачать";
+                box.append(img, document.createElement("br"), link);
+            }
+            container.append(row);
+        });
+    }
+
     const connection = new signalR.HubConnectionBuilder()
         .withUrl("/hubs/notifications?sessionId=" + sessionId)
         .withAutomaticReconnect()
@@ -201,11 +322,136 @@
 
     connection.start().then(() => setConn("подключено")).catch(() => setConn("нет связи"));
 
-    // --- Форма ---
     const filterSelect = document.getElementById("filter");
     filterSelect.onchange = () => {
         document.getElementById("blurBox").hidden = filterSelect.value !== "Blur";
     };
+
+    function updateAuthUI() {
+        const sid = localStorage.getItem("authSessionId");
+        const authForm = document.getElementById("authForm");
+        const authInfo = document.getElementById("authInfo");
+        const authUser = document.getElementById("authUser");
+        if (sid) {
+            authForm.hidden = true;
+            authInfo.hidden = false;
+            authUser.textContent = "Вошли (сессия: " + sid.slice(0, 8) + "…)";
+        } else {
+            authForm.hidden = false;
+            authInfo.hidden = true;
+        }
+    }
+
+    // Загрузить историю при старте, если авторизован
+    if (localStorage.getItem("authSessionId")) {
+        loadHistory();
+    }
+
+    async function register() {
+        const login = document.getElementById("login").value;
+        const password = document.getElementById("password").value;
+        if (!login || !password) {
+            document.getElementById("authStatus").textContent = "Введите логин и пароль";
+            return;
+        }
+        if (login.length < 3 || login.length > 32) {
+            document.getElementById("authStatus").textContent = "Логин: от 3 до 32 символов";
+            return;
+        }
+        if (password.length < 8 || password.length > 128) {
+            document.getElementById("authStatus").textContent = "Пароль: от 8 до 128 символов";
+            return;
+        }
+        const API = await apiUrl;
+        try {
+            const regRes = await fetch(API + "/register", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({login, password})
+            });
+            if (!regRes.ok) {
+                document.getElementById("authStatus").textContent = "Ошибка регистрации";
+                return;
+            }
+            const loginRes = await fetch(API + "/login", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({login, password})
+            });
+            if (!loginRes.ok) {
+                document.getElementById("authStatus").textContent = "Ошибка входа";
+                return;
+            }
+            const data = await loginRes.json();
+            localStorage.setItem("authSessionId", data.sessionId);
+            sessionId = data.sessionId;
+            updateAuthUI();
+            loadHistory();
+            connection.stop().then(() => {
+                connection.withUrl("/hubs/notifications?sessionId=" + sessionId);
+                connection.start().then(() => setConn("подключено"));
+            });
+        } catch (err) {
+            document.getElementById("authStatus").textContent = "Ошибка сети";
+        }
+    }
+
+    async function login() {
+        const login = document.getElementById("login").value;
+        const password = document.getElementById("password").value;
+        if (!login || !password) {
+            document.getElementById("authStatus").textContent = "Введите логин и пароль";
+            return;
+        }
+        if (login.length < 3 || login.length > 32) {
+            document.getElementById("authStatus").textContent = "Логин: от 3 до 32 символов";
+            return;
+        }
+        if (password.length < 8 || password.length > 128) {
+            document.getElementById("authStatus").textContent = "Пароль: от 8 до 128 символов";
+            return;
+        }
+        const API = await apiUrl;
+        try {
+            const loginRes = await fetch(API + "/login", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({login, password})
+            });
+            if (!loginRes.ok) {
+                document.getElementById("authStatus").textContent = "Неверный логин или пароль";
+                return;
+            }
+            const data = await loginRes.json();
+            localStorage.setItem("authSessionId", data.sessionId);
+            sessionId = data.sessionId;
+            updateAuthUI();
+            loadHistory();
+            connection.stop().then(() => {
+                connection.withUrl("/hubs/notifications?sessionId=" + sessionId);
+                connection.start().then(() => setConn("подключено"));
+            });
+        } catch (err) {
+            document.getElementById("authStatus").textContent = "Ошибка сети";
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem("authSessionId");
+        sessionId = crypto.randomUUID();
+        localStorage.setItem("anonSessionId", sessionId);
+        updateAuthUI();
+        document.getElementById("history").innerHTML = "";
+        document.getElementById("history").style.display = "none";
+        document.getElementById("loadHistoryBtn").textContent = "Показать историю";
+        historyVisible = false;
+        connection.stop().then(() => {
+            connection.withUrl("/hubs/notifications?sessionId=" + sessionId);
+            connection.start().then(() => setConn("подключено"));
+        });
+    }
+
+    updateAuthUI();
 
     document.getElementById("form").onsubmit = async (e) => {
         e.preventDefault();
@@ -217,7 +463,12 @@
 
         try {
             const API = await apiUrl;
-            const response = await fetch(API + "/tasks", {method: "POST", body});
+            const headers = {};
+            const authSid = localStorage.getItem("authSessionId");
+            if (authSid) {
+                headers["Authorization"] = "Bearer " + authSid;
+            }
+            const response = await fetch(API + "/tasks", {method: "POST", headers, body});
             const data = await response.json();
             if (!response.ok) {
                 alert(data.error || "Ошибка при отправке");
