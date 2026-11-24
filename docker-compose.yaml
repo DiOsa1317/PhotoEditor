@@ -67,8 +67,8 @@
 
   signalr:
     build:
-      context: .
-      dockerfile: src/SignalR/Dockerfile
+      context: ./src
+      dockerfile: SignalR/Dockerfile
     container_name: pixelqueue-signalr
     ports:
       - "5001:80"

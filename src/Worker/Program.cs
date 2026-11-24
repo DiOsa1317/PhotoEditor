@@ -18,8 +18,8 @@ builder.Host.UseSerilog((_, cfg) => cfg
     .Enrich.FromLogContext()
     .WriteTo.Console(new CompactJsonFormatter()));
 
-var mongoConn = builder.Configuration["MONGO_CONNECTION_STRING"] ?? "mongodb://localhost:27017";
-var mongoDb = builder.Configuration["MONGO_DATABASE"] ?? "pixelqueue";
+var mongoConn = builder.Configuration["Mongo:ConnectionString"] ?? "mongodb://localhost:27017";
+var mongoDb = builder.Configuration["Mongo:Database"] ?? "pixelqueue";
 
 builder.Services.AddSingleton<IMongoDatabase>(_ =>
 {
@@ -33,10 +33,10 @@ builder.Services.AddSingleton<IImageProcessor, MagickImageProcessor>();
 
 builder.Services.AddHostedService<LeaseRecoveryService>();
 
-var rabbitHost = builder.Configuration["RABBITMQ_HOST"] ?? "localhost";
-var rabbitPort = int.Parse(builder.Configuration["RABBITMQ_PORT"] ?? "5672");
-var rabbitUser = builder.Configuration["RABBITMQ_USER"] ?? "guest";
-var rabbitPass = builder.Configuration["RABBITMQ_PASS"] ?? "guest";
+var rabbitHost = builder.Configuration["RabbitMq:Host"] ?? "localhost";
+var rabbitPort = int.Parse(builder.Configuration["RabbitMq:Port"] ?? "5672");
+var rabbitUser = builder.Configuration["RabbitMq:Username"] ?? "guest";
+var rabbitPass = builder.Configuration["RabbitMq:Password"] ?? "guest";
 
 builder.Services.AddMassTransit(x =>
 {
