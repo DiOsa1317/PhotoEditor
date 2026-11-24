@@ -47,17 +47,18 @@ dotnet run --project src/SignalR
 ### 5. Проверка через curl
 ```bash
 # Регистрация
-curl -X POST http://localhost:5064/register -H "Content-Type: application/json" -d '{"login":"user1","password":"pass1"}'
+curl -X POST http://localhost:5064/register -H "Content-Type: application/json" -d '{"login":"user1","password":"password123"}'
 
 # Вход
-curl -X POST http://localhost:5064/login -H "Content-Type: application/json" -d '{"login":"user1","password":"pass1"}'
+curl -X POST http://localhost:5064/login -H "Content-Type: application/json" -d '{"login":"user1","password":"password123"}'
+# Скопируй sessionId из ответа и подставь его вместо <sessionId>
 
 # Создать задачу
 curl -X POST http://localhost:5064/tasks \
+  -H "Authorization: Bearer <sessionId>" \
   -F "file=@image.jpg" \
   -F "filter=Negative" \
-  -F "blurRadius=0" \
-  -F "userId=<guid>"
+  -F "blurRadius=0"
 
 # Проверить статус (должен стать Completed)
 curl http://localhost:5064/tasks/<taskId>
@@ -65,6 +66,8 @@ curl http://localhost:5064/tasks/<taskId>
 # Скачать результат
 curl http://localhost:5064/tasks/<taskId>/result -o result.png
 ```
+Регистрация принимает логин длиной 3–32 символа и пароль 8–128 символов.
+Загрузка принимает JPEG, PNG или WebP размером не более 10 MiB.
 
 ### Сборка и тесты
 ```bash
