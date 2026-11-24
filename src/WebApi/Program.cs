@@ -60,6 +60,7 @@ builder.Services.AddOpenTelemetry()
 
 builder.Services.AddSingleton<IUserRepository, RamUserRepository>();
 builder.Services.AddSingleton<ISessionRepository, RamSessionRepository>();
+builder.Services.AddSingleton<IPhotoRepository, RamPhotoRepository>();
 
 var app = builder.Build();
 app.Use(async (context, next) =>
