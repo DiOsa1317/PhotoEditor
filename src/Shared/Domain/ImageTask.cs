@@ -4,6 +4,7 @@ public class ImageTask
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string UserId { get; set; } = Guid.NewGuid().ToString();
+    public string SessionId { get; set; } = string.Empty;
     public FilterType Filter { get; set; } = FilterType.Negative;
     public double BlurRadius { get; set; } = 0.0;
     public ImageTaskStatus Status { get; set; } = ImageTaskStatus.Pending;

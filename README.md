@@ -47,17 +47,18 @@ dotnet run --project src/SignalR
 ### 5. Проверка через curl
 ```bash
 # Регистрация
-curl -X POST http://localhost:5064/register -H "Content-Type: application/json" -d '{"login":"user1","password":"pass1"}'
+curl -X POST http://localhost:5064/register -H "Content-Type: application/json" -d '{"login":"user1","password":"password123"}'
 
 # Вход
-curl -X POST http://localhost:5064/login -H "Content-Type: application/json" -d '{"login":"user1","password":"pass1"}'
+curl -X POST http://localhost:5064/login -H "Content-Type: application/json" -d '{"login":"user1","password":"password123"}'
+# Скопируй sessionId из ответа и подставь его вместо <sessionId>
 
 # Создать задачу
 curl -X POST http://localhost:5064/tasks \
+  -H "Authorization: Bearer <sessionId>" \
   -F "file=@image.jpg" \
   -F "filter=Negative" \
-  -F "blurRadius=0" \
-  -F "userId=<guid>"
+  -F "blurRadius=0"
 
 # Проверить статус (должен стать Completed)
 curl http://localhost:5064/tasks/<taskId>
@@ -65,6 +66,8 @@ curl http://localhost:5064/tasks/<taskId>
 # Скачать результат
 curl http://localhost:5064/tasks/<taskId>/result -o result.png
 ```
+Регистрация принимает логин длиной 3–32 символа и пароль 8–128 символов.
+Загрузка принимает JPEG, PNG или WebP размером не более 10 MiB.
 
 ### Сборка и тесты
 ```bash
@@ -80,3 +83,103 @@ dotnet test
 | `RabbitMq:Host` | `localhost` |
 | `RabbitMq:Username` | `guest` |
 | `RabbitMq:Password` | `guest` |
+
+## Запуск в Kubernetes (minikube)
+
+Манифесты (`Deployment`, `Service`, `ConfigMap`, `Secret`, `PersistentVolumeClaim`) находятся в папке `Deploy/`.
+
+**Требования:** установленные `docker`, `minikube` и `kubectl`.
+
+### Первый запуск
+
+1. Запусти кластер:
+   ```bash
+   minikube start
+   ```
+2. Собери Docker-образы сервисов (контекст сборки — папка `src`):
+   ```bash
+   docker build -t pixelqueue-webapi:latest -f src/WebApi/Dockerfile src
+   docker build -t pixelqueue-worker:latest -f src/Worker/Dockerfile src
+   docker build -t pixelqueue-signalr:latest -f src/SignalR/Dockerfile src
+   ```
+3. Загрузи образы в minikube:
+   ```bash
+   minikube image load pixelqueue-webapi:latest
+   minikube image load pixelqueue-worker:latest
+   minikube image load pixelqueue-signalr:latest
+
+   # Если Docker требует sudo:
+   sudo docker save pixelqueue-webapi:latest | minikube image load -
+   sudo docker save pixelqueue-worker:latest | minikube image load -
+   sudo docker save pixelqueue-signalr:latest | minikube image load -
+   ```
+4. Создай локальный файл секретов из шаблона (файл `Deploy/secret.yaml` добавлен в `.gitignore`):
+   ```bash
+   cp Deploy/secret.yaml.example Deploy/secret.yaml
+   ```
+5. Примени манифесты и дождись, пока все поды перейдут в статус `Running` (`1/1`):
+   ```bash
+   kubectl apply -f Deploy/
+   kubectl get pods -w
+   ```
+6. Пробрось порты сервисов на локальную машину:
+   ```bash
+   kubectl port-forward svc/webapi 5000:80 &
+   kubectl port-forward svc/signalr 5001:80 &
+   kubectl port-forward svc/rabbitmq 15672:15672 &
+   ```
+
+После запуска доступны:
+
+- **Веб-клиент (SignalR):** `http://localhost:5001`
+- **WebApi:** `http://localhost:5000`
+- **RabbitMQ Management UI:** `http://localhost:15672` (`guest` / `guest`)
+
+### Повторный запуск (после `minikube stop` или перезагрузки)
+
+Образы, манифесты и данные MongoDB сохраняются внутри кластера:
+
+```bash
+minikube start
+kubectl get pods -w
+kubectl port-forward svc/webapi 5000:80 &
+kubectl port-forward svc/signalr 5001:80 &
+kubectl port-forward svc/rabbitmq 15672:15672 &
+```
+
+### Обновление после изменений в коде
+
+Пересобери изменённые сервисы, загрузи образы в кластер и перезапусти деплойменты:
+
+```bash
+docker build -t pixelqueue-webapi:latest -f src/WebApi/Dockerfile src
+docker build -t pixelqueue-worker:latest -f src/Worker/Dockerfile src
+docker build -t pixelqueue-signalr:latest -f src/SignalR/Dockerfile src
+
+minikube image load pixelqueue-webapi:latest
+minikube image load pixelqueue-worker:latest
+minikube image load pixelqueue-signalr:latest
+
+kubectl rollout restart deployment webapi worker signalr
+kubectl get pods -w
+```
+
+Затем перезапусти `port-forward`:
+
+```bash
+pkill -f "kubectl port-forward"
+kubectl port-forward svc/webapi 5000:80 &
+kubectl port-forward svc/signalr 5001:80 &
+kubectl port-forward svc/rabbitmq 15672:15672 &
+```
+
+### Остановка и очистка
+
+```bash
+# Остановить проброс портов и кластер (данные сохранятся)
+pkill -f "kubectl port-forward"
+minikube stop
+
+# Полностью удалить ресурсы проекта из кластера
+kubectl delete -f Deploy/
+```

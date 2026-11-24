@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pixelqueue-config
+data:
+  Mongo__ConnectionString: "mongodb://mongodb:27017"
+  Mongo__Database: "pixelqueue"
+  RabbitMq__Host: "rabbitmq"
+  RabbitMq__Port: "5672"
+  Cors__Origins: "http://localhost:5001,http://localhost:8081"
+  Api__BaseUrl: "http://localhost:5000"

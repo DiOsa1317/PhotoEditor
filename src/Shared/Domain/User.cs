@@ -1,13 +1,16 @@
+using MongoDB.Bson.Serialization.Attributes;
+
 namespace Shared.Domain;
 
 public class User
 {
-    public User(string login, string id, string passwordHash, DateTime? createdAt = null)
+    [BsonConstructor]
+    public User(string login, string id, string passwordHash, DateTime createdAt)
     {
         Login = login;
         Id = id;
         PasswordHash = passwordHash;
-        CreatedAt = createdAt ?? DateTime.UtcNow;
+        CreatedAt = createdAt;
     }
 
     public string Login { get; }

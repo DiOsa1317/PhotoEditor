@@ -29,8 +29,8 @@
 
   webapi:
     build:
-      context: .
-      dockerfile: src/WebApi/Dockerfile
+      context: ./src
+      dockerfile: WebApi/Dockerfile
     container_name: pixelqueue-webapi
     ports:
       - "5000:80"
@@ -40,6 +40,7 @@
       RabbitMq:Host: rabbitmq
       RabbitMq:Username: guest
       RabbitMq:Password: guest
+      ASPNETCORE_ENVIRONMENT: Development
       Cors:Origins: http://localhost:5001
     depends_on:
       mongodb:
@@ -49,8 +50,8 @@
 
   worker:
     build:
-      context: .
-      dockerfile: src/Worker/Dockerfile
+      context: ./src
+      dockerfile: Worker/Dockerfile
     container_name: pixelqueue-worker
     environment:
       Mongo:ConnectionString: mongodb://mongodb:27017
@@ -66,8 +67,8 @@
 
   signalr:
     build:
-      context: .
-      dockerfile: src/SignalR/Dockerfile
+      context: ./src
+      dockerfile: SignalR/Dockerfile
     container_name: pixelqueue-signalr
     ports:
       - "5001:80"

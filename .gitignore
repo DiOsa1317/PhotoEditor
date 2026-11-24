@@ -47,3 +47,4 @@ ehthumbs.db
 *.sqlite
 *.db
 crashdump/
+Deploy/secret.yaml

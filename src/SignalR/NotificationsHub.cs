@@ -6,11 +6,8 @@ public class NotificationsHub : Hub
 {
     public override async Task OnConnectedAsync()
     {
-        var userId = Context.GetHttpContext()?.Request.Query["userId"].ToString();
-        if (!string.IsNullOrEmpty(userId))
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, userId);
-        }
+        var sessionId = Context.GetHttpContext()?.Request.Query["sessionId"].ToString();
+        if (!string.IsNullOrEmpty(sessionId)) await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
 
         await base.OnConnectedAsync();
     }

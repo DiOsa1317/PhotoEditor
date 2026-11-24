@@ -11,6 +11,13 @@ public class MongoUserRepository : IUserRepository
     public MongoUserRepository(IMongoDatabase database)
     {
         _users = database.GetCollection<User>("users");
+        _users.Indexes.CreateOne(new CreateIndexModel<User>(
+            Builders<User>.IndexKeys.Ascending(user => user.Login),
+            new CreateIndexOptions
+            {
+                Unique = true,
+                Name = "ux_users_login"
+            }));
     }
 
     public User? GetUserById(string userId)
@@ -25,9 +32,15 @@ public class MongoUserRepository : IUserRepository
 
     public bool PostUser(User user)
     {
-        if (GetUserById(user.Id) != null)
+        try
+        {
+            _users.InsertOne(user);
+            return true;
+        }
+        catch (MongoWriteException exception) when (
+            exception.WriteError?.Category == ServerErrorCategory.DuplicateKey)
+        {
             return false;
-        _users.InsertOne(user);
-        return true;
+        }
     }
 }

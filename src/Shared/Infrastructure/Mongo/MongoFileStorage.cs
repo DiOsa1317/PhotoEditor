@@ -23,9 +23,9 @@ public class MongoFileStorage : IFileStorage
             .ContinueWith(_ => id.ToString(), cancellationToken);
     }
 
-    public Task<GridFSDownloadStream<ObjectId>> GetAsync(string fileId, CancellationToken cancellationToken = default)
+    public async Task<Stream> GetAsync(string fileId, CancellationToken cancellationToken = default)
     {
-        return _bucket.OpenDownloadStreamAsync(ObjectId.Parse(fileId), cancellationToken: cancellationToken);
+        return await _bucket.OpenDownloadStreamAsync(ObjectId.Parse(fileId), cancellationToken: cancellationToken);
     }
 
     public Task DeleteAsync(string fileId, CancellationToken cancellationToken = default)

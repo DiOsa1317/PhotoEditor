@@ -20,7 +20,10 @@ public static class TaskMetrics
             Buckets = Histogram.ExponentialBuckets(0.05, 2, 10)
         });
 
-    public static void TaskReceived() => Pending.Inc();
+    public static void TaskReceived()
+    {
+        Pending.Inc();
+    }
 
     public static void TaskCompleted(double seconds)
     {
